@@ -29,9 +29,9 @@ export function ScatterBackground() {
     function gc(str: string, idx: number) {
       return str[((idx % str.length) + str.length) % str.length]
     }
-
+    
     function build() {
-      bg.innerHTML = ''
+      bg!.innerHTML = ''
       rows = []
       const cols = Math.floor(bg.offsetWidth / CW)
       const numRows = Math.floor(bg.offsetHeight / CH)
@@ -62,7 +62,7 @@ export function ScatterBackground() {
           cells.push(d)
         }
 
-        bg.appendChild(el)
+        bg!.appendChild(el)
         rows.push({
           cells,
           cols,
