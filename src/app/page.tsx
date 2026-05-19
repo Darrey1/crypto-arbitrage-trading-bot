@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { ArrowRight, CheckCircle2, TrendingUp, Shield, BarChart3, Globe, Bell, Cpu, Activity } from 'lucide-react'
 import { formatPrice, formatPercent } from '@/lib/utils'
 import dynamic from 'next/dynamic'
@@ -69,20 +69,6 @@ function TickerBar() {
 }
 
 export default function LandingPage() {
-  const [livePrice, setLivePrice] = useState(3245.82)
-  const [priceUp, setPriceUp] = useState(true)
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setLivePrice(p => {
-        const next = p + (Math.random() - 0.5) * 8
-        setPriceUp(next > p)
-        return +next.toFixed(2)
-      })
-    }, 1800)
-    return () => clearInterval(id)
-  }, [])
-
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: 'var(--bg)' }}>
       <ScatterBackground />
@@ -196,121 +182,139 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Hero data cards */}
-        <div className="mt-20 grid grid-cols-1 lg:grid-cols-3 gap-4 max-w-4xl mx-auto text-left">
-          {/* Live prices */}
+        {/* Hero visual + supporting cards (no overlap) */}
+        <div className="mt-20 max-w-4xl mx-auto">
           <div
-            className="rounded-2xl p-5"
-            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+            className="rounded-2xl overflow-hidden shadow-xl"
+            style={{ border: '1px solid var(--border)', background: '#060709' }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-[11px] font-semibold tracking-widest uppercase" style={{ color: 'var(--text-3)' }}>
-                ETH / USDT
-              </span>
-              <div className="live-dot" />
-            </div>
-            {MOCK_PRICES.map((p, i) => (
-              <div
-                key={i}
-                className="flex items-center justify-between py-2"
-                style={{ borderBottom: i < 2 ? '1px solid var(--border-2)' : 'none' }}
-              >
-                <span className="text-xs" style={{ color: 'var(--text-3)' }}>{p.exchange}</span>
-                <span
-                  className="text-sm font-mono font-semibold"
-                  style={{ color: i === 1 ? '#22c55e' : 'var(--text-1)' }}
-                >
-                  ${formatPrice(p.price)}
-                </span>
-                <span className="text-xs font-mono text-emerald-400">{formatPercent(p.change)}</span>
-              </div>
-            ))}
-          </div>
+            <Image
+              src="/cryptotradinghomepage.jpeg"
+              alt="Crypto trading dashboard"
+              width={1600}
+              height={900}
+              priority
+              unoptimized
+              className="w-full h-[520px] object-contain"
+            />
+          
 
-          {/* Live opportunity */}
-          <div
-            className="rounded-2xl p-5"
-            style={{
-              background: 'var(--surface)',
-              border: '1px solid var(--border)',
-              borderColor: 'rgba(236,189,116,0.2)',
-            }}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <span
-                className="text-[11px] font-semibold tracking-widest uppercase"
-                style={{ color: 'var(--accent)' }}
-              >
-                Live Opportunity
-              </span>
-              <span className="badge-purple text-[10px] px-2 py-0.5 rounded-full">DETECTED</span>
-            </div>
-            <div className="text-center py-3">
-              <div
-                className="text-4xl font-black font-mono mb-1"
-                style={{ color: 'var(--accent)', letterSpacing: '-0.02em' }}
-              >
-                +0.47%
-              </div>
-              <div className="text-xs" style={{ color: 'var(--text-3)' }}>
-                net spread after fees
-              </div>
-            </div>
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 text-left">
+            {/* Live prices */}
             <div
-              className="rounded-xl p-3 mt-2"
-              style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)' }}
+              className="rounded-2xl p-5"
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
             >
-              <div className="flex items-center justify-between text-xs">
-                <div className="text-center">
-                  <div className="mb-1" style={{ color: 'var(--text-3)' }}>Buy on</div>
-                  <div className="font-semibold text-amber-400">Binance</div>
-                  <div className="font-mono mt-0.5" style={{ color: 'var(--text-2)' }}>$3,245.82</div>
-                </div>
-                <ArrowRight className="w-4 h-4" style={{ color: 'var(--accent)' }} />
-                <div className="text-center">
-                  <div className="mb-1" style={{ color: 'var(--text-3)' }}>Sell on</div>
-                  <div className="font-semibold" style={{ color: 'var(--text-1)' }}>Kraken</div>
-                  <div className="font-mono mt-0.5" style={{ color: 'var(--text-2)' }}>$3,247.10</div>
-                </div>
-              </div>
-              <div
-                className="mt-3 flex items-center justify-between text-xs pt-2"
-                style={{ borderTop: '1px solid var(--border-2)' }}
-              >
-                <span style={{ color: 'var(--text-3)' }}>Est. on $1,000</span>
-                <span className="font-semibold font-mono text-emerald-400">+$4.70</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Today stats */}
-          <div
-            className="rounded-2xl p-5"
-            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
-          >
-            <div className="text-[11px] font-semibold tracking-widest uppercase mb-4" style={{ color: 'var(--text-3)' }}>
-              Today&apos;s Performance
-            </div>
-            {[
-              { label: 'Opportunities', value: '47' },
-              { label: 'Trades Executed', value: '12' },
-              { label: 'Net Profit', value: '+$124.50', gold: true },
-              { label: 'Win Rate', value: '91.6%', green: true },
-            ].map(({ label, value, gold, green }) => (
-              <div
-                key={label}
-                className="flex items-center justify-between py-2"
-                style={{ borderBottom: label !== 'Win Rate' ? '1px solid var(--border-2)' : 'none' }}
-              >
-                <span className="text-xs" style={{ color: 'var(--text-3)' }}>{label}</span>
-                <span
-                  className="text-sm font-mono font-semibold"
-                  style={{ color: gold ? 'var(--accent)' : green ? '#22c55e' : 'var(--text-1)' }}
-                >
-                  {value}
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-[11px] font-semibold tracking-widest uppercase" style={{ color: 'var(--text-3)' }}>
+                  ETH / USDT
                 </span>
+                <div className="live-dot" />
               </div>
-            ))}
+              {MOCK_PRICES.map((p, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between py-2"
+                  style={{ borderBottom: i < 2 ? '1px solid var(--border-2)' : 'none' }}
+                >
+                  <span className="text-xs" style={{ color: 'var(--text-3)' }}>{p.exchange}</span>
+                  <span
+                    className="text-sm font-mono font-semibold"
+                    style={{ color: i === 1 ? '#22c55e' : 'var(--text-1)' }}
+                  >
+                    ${formatPrice(p.price)}
+                  </span>
+                  <span className="text-xs font-mono text-emerald-400">{formatPercent(p.change)}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Live opportunity */}
+            <div
+              className="rounded-2xl p-5"
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                borderColor: 'rgba(236,189,116,0.2)',
+              }}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <span
+                  className="text-[11px] font-semibold tracking-widest uppercase"
+                  style={{ color: 'var(--accent)' }}
+                >
+                  Live Opportunity
+                </span>
+                <span className="badge-purple text-[10px] px-2 py-0.5 rounded-full">DETECTED</span>
+              </div>
+              <div className="text-center py-3">
+                <div
+                  className="text-4xl font-black font-mono mb-1"
+                  style={{ color: 'var(--accent)', letterSpacing: '-0.02em' }}
+                >
+                  +0.47%
+                </div>
+                <div className="text-xs" style={{ color: 'var(--text-3)' }}>
+                  net spread after fees
+                </div>
+              </div>
+              <div
+                className="rounded-xl p-3 mt-2"
+                style={{ background: 'var(--surface-2)', border: '1px solid var(--border-2)' }}
+              >
+                <div className="flex items-center justify-between text-xs">
+                  <div className="text-center">
+                    <div className="mb-1" style={{ color: 'var(--text-3)' }}>Buy on</div>
+                    <div className="font-semibold text-amber-400">Binance</div>
+                    <div className="font-mono mt-0.5" style={{ color: 'var(--text-2)' }}>$3,245.82</div>
+                  </div>
+                  <ArrowRight className="w-4 h-4" style={{ color: 'var(--accent)' }} />
+                  <div className="text-center">
+                    <div className="mb-1" style={{ color: 'var(--text-3)' }}>Sell on</div>
+                    <div className="font-semibold" style={{ color: 'var(--text-1)' }}>Kraken</div>
+                    <div className="font-mono mt-0.5" style={{ color: 'var(--text-2)' }}>$3,247.10</div>
+                  </div>
+                </div>
+                <div
+                  className="mt-3 flex items-center justify-between text-xs pt-2"
+                  style={{ borderTop: '1px solid var(--border-2)' }}
+                >
+                  <span style={{ color: 'var(--text-3)' }}>Est. on $1,000</span>
+                  <span className="font-semibold font-mono text-emerald-400">+$4.70</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Today stats */}
+            <div
+              className="rounded-2xl p-5"
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
+            >
+              <div className="text-[11px] font-semibold tracking-widest uppercase mb-4" style={{ color: 'var(--text-3)' }}>
+                Today&apos;s Performance
+              </div>
+              {[
+                { label: 'Opportunities', value: '47' },
+                { label: 'Trades Executed', value: '12' },
+                { label: 'Net Profit', value: '+$124.50', gold: true },
+                { label: 'Win Rate', value: '91.6%', green: true },
+              ].map(({ label, value, gold, green }) => (
+                <div
+                  key={label}
+                  className="flex items-center justify-between py-2"
+                  style={{ borderBottom: label !== 'Win Rate' ? '1px solid var(--border-2)' : 'none' }}
+                >
+                  <span className="text-xs" style={{ color: 'var(--text-3)' }}>{label}</span>
+                  <span
+                    className="text-sm font-mono font-semibold"
+                    style={{ color: gold ? 'var(--accent)' : green ? '#22c55e' : 'var(--text-1)' }}
+                  >
+                    {value}
+                  </span>
+                </div>
+              ))}
+            </div>
+            </div>
           </div>
         </div>
       </section>
@@ -324,7 +328,7 @@ export default function LandingPage() {
           {STATS.map(({ value, suffix, label }) => (
             <div key={label}>
               <div
-                className="text-4xl font-black font-mono mb-1"
+                className="text-5xl font-black font-mono mb-1"
                 style={{ color: 'var(--accent)', letterSpacing: '-0.03em' }}
               >
                 {value}<span style={{ color: 'var(--text-2)' }}>{suffix}</span>
