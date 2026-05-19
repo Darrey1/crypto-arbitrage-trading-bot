@@ -195,7 +195,7 @@ export default function LandingPage() {
               height={900}
               priority
               unoptimized
-              className="w-full h-[520px] object-contain"
+              className="w-full h-auto object-cover md:h-[520px] md:object-contain"
             />
           
 
@@ -519,84 +519,93 @@ export default function LandingPage() {
 
       {/* ── Live Demo ── */}
       <section
-        className="relative z-10 py-28 px-6"
-        style={{ background: 'var(--surface)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}
+  className="relative z-10 py-20 px-4 md:py-28 md:px-6"
+  style={{ background: 'var(--surface)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}
+>
+  <div className="max-w-4xl mx-auto">
+    <div className="text-center mb-12">
+      <p
+        className="text-xs font-semibold tracking-[0.18em] uppercase mb-4"
+        style={{ color: 'var(--text-3)' }}
       >
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <p
-              className="text-xs font-semibold tracking-[0.18em] uppercase mb-4"
-              style={{ color: 'var(--text-3)' }}
+        Live Demo
+      </p>
+      <h2
+        className="font-black"
+        style={{
+          fontSize: 'clamp(28px, 5vw, 52px)',
+          color: 'var(--text-1)',
+          letterSpacing: '-0.02em',
+        }}
+      >
+        See it in action.
+      </h2>
+    </div>
+
+    <div
+      className="rounded-2xl overflow-hidden"
+      style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}
+    >
+      {/* Header */}
+      <div
+        className="px-4 py-3.5 flex items-center gap-3 flex-wrap"
+        style={{ borderBottom: '1px solid var(--border)' }}
+      >
+        <div className="live-dot" />
+        <span className="text-xs font-semibold" style={{ color: 'var(--text-1)' }}>
+          Live Opportunity Feed
+        </span>
+        <span className="ml-auto text-[11px] font-mono" style={{ color: 'var(--text-3)' }}>
+          scanning every 800ms
+        </span>
+      </div>
+
+      {MOCK_OPPORTUNITIES.map((opp, i) => (
+        <div
+          key={i}
+          className="px-4 py-4 transition-colors"
+          style={{
+            borderBottom: i < MOCK_OPPORTUNITIES.length - 1 ? '1px solid var(--border-2)' : 'none',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+        >
+          {/* Top row: pair + exchange route + execute button */}
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <span className="text-xs font-mono font-semibold" style={{ color: 'var(--text-1)' }}>
+              {opp.pair}
+            </span>
+            <div className="flex items-center gap-1.5 text-xs flex-1 px-2" style={{ color: 'var(--text-3)' }}>
+              {opp.from}
+              <ArrowRight className="w-3 h-3 flex-shrink-0" style={{ color: 'var(--accent)' }} />
+              {opp.to}
+            </div>
+            <Link
+              href="/dashboard"
+              className="btn-primary text-xs px-3 py-1.5 rounded-lg flex-shrink-0"
             >
-              Live Demo
-            </p>
-            <h2
-              className="font-black"
-              style={{
-                fontSize: 'clamp(32px, 5vw, 52px)',
-                color: 'var(--text-1)',
-                letterSpacing: '-0.02em',
-              }}
-            >
-              See it in action.
-            </h2>
+              Execute
+            </Link>
           </div>
 
-          <div
-            className="rounded-2xl overflow-hidden"
-            style={{ background: 'var(--bg)', border: '1px solid var(--border)' }}
-          >
-            <div
-              className="px-5 py-3.5 flex items-center gap-3"
-              style={{ borderBottom: '1px solid var(--border)' }}
-            >
-              <div className="live-dot" />
-              <span className="text-xs font-semibold" style={{ color: 'var(--text-1)' }}>
-                Live Opportunity Feed
-              </span>
-              <span className="ml-auto text-[11px] font-mono" style={{ color: 'var(--text-3)' }}>
-                scanning every 800ms
-              </span>
-            </div>
-            {MOCK_OPPORTUNITIES.map((opp, i) => (
-              <div
-                key={i}
-                className="px-5 py-4 flex items-center gap-5 transition-colors"
-                style={{
-                  borderBottom: i < MOCK_OPPORTUNITIES.length - 1 ? '1px solid var(--border-2)' : 'none',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-              >
-                <span className="text-xs font-mono font-semibold w-20" style={{ color: 'var(--text-1)' }}>
-                  {opp.pair}
-                </span>
-                <div className="flex items-center gap-2 flex-1 text-xs" style={{ color: 'var(--text-3)' }}>
-                  {opp.from}
-                  <ArrowRight className="w-3 h-3" style={{ color: 'var(--accent)' }} />
-                  {opp.to}
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-mono font-semibold" style={{ color: 'var(--accent)' }}>
-                    {opp.spread}
-                  </div>
-                  <div className="text-[10px]" style={{ color: 'var(--text-3)' }}>net spread</div>
-                </div>
-                <div className="text-right w-20">
-                  <div className="text-sm font-mono font-semibold text-emerald-400">{opp.profit}</div>
-                  <div className="text-[10px]" style={{ color: 'var(--text-3)' }}>per $1K</div>
-                </div>
-                <Link
-                  href="/dashboard"
-                  className="btn-primary text-xs px-4 py-1.5 rounded-lg flex-shrink-0"
-                >
-                  Execute
-                </Link>
+          {/* Bottom row: spread + profit */}
+          <div className="flex items-center gap-6">
+            <div>
+              <div className="text-sm font-mono font-semibold" style={{ color: 'var(--accent)' }}>
+                {opp.spread}
               </div>
-            ))}
+              <div className="text-[10px]" style={{ color: 'var(--text-3)' }}>net spread</div>
+            </div>
+            <div>
+              <div className="text-sm font-mono font-semibold text-emerald-400">{opp.profit}</div>
+              <div className="text-[10px]" style={{ color: 'var(--text-3)' }}>per $1K</div>
+            </div>
           </div>
         </div>
-      </section>
+      ))}
+    </div>
+  </div>
+</section>
 
       {/* ── CTA ── */}
       <section className="relative z-10 py-28 px-6">
