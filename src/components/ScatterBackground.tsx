@@ -33,8 +33,8 @@ export function ScatterBackground() {
     function build() {
       bg!.innerHTML = ''
       rows = []
-      const cols = Math.floor(bg.offsetWidth / CW)
-      const numRows = Math.floor(bg.offsetHeight / CH)
+      const cols = Math.floor(bg!.offsetWidth / CW)
+      const numRows = Math.floor(bg!.offsetHeight / CH)
       const half = Math.floor(cols / 2)
 
       for (let r = 0; r < numRows; r++) {
