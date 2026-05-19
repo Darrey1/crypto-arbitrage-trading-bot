@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"const l = require\\('lucide-react'\\); console.log\\(Object.keys\\(l\\).filter\\(n => /github/i.test\\(n\\)\\).join\\(', '\\)\\)\")",
+      "Bash(npm run *)",
+      "WebFetch(domain:vooi.io)",
+      "Bash(curl -s https://vooi.io/)",
+      "Bash(cat /tmp/vooi_page.html | grep -oE \"background-color:[^;]*|color:[^;]*|rgb\\\\\\([^\\)]*\\\\\\)|rgba\\\\\\([^\\)]*\\\\\\)|#[0-9a-f]{6}|#[0-9a-f]{3}\" | sort | uniq | head -100)",
+      "Read(//private/tmp/**)"
+    ]
+  }
+}
