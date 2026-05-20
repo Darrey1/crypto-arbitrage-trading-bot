@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { ArrowRight, CheckCircle2, TrendingUp, Shield, BarChart3, Globe, Bell, Cpu, Activity } from 'lucide-react'
 import { formatPrice, formatPercent } from '@/lib/utils'
 import dynamic from 'next/dynamic'
@@ -188,16 +187,13 @@ export default function LandingPage() {
             className="rounded-2xl overflow-hidden shadow-xl"
             style={{ border: '1px solid var(--border)', background: '#060709' }}
           >
-            <Image
+            <img
               src="/cryptotradinghomepage.jpeg"
               alt="Crypto trading dashboard"
-              width={1600}
-              height={900}
-              priority
-              unoptimized
-              className="w-full h-auto object-cover md:h-[520px] md:object-contain"
+              className="block w-full h-auto object-cover md:h-[520px] md:object-contain"
+              loading="eager"
             />
-          
+          </div>
 
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 text-left">
             {/* Live prices */}
@@ -313,7 +309,6 @@ export default function LandingPage() {
                   </span>
                 </div>
               ))}
-            </div>
             </div>
           </div>
         </div>
