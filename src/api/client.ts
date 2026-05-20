@@ -65,12 +65,14 @@ apiClient.interceptors.response.use(
       useAuthStore.getState().updateTokens(tokens)
       originalRequest.headers.Authorization = `Bearer ${tokens.accessToken}`
       return apiClient(originalRequest)
-    } catch (refreshError) {
+    } catch {
       useAuthStore.getState().logout()
       if (typeof window !== 'undefined') {
         window.location.href = '/auth/login'
       }
-      return Promise.reject(refreshError)
+      // Reject with the original 401 error so callers see the backend message,
+      // not an error from the refresh endpoint
+      return Promise.reject(error)
     }
   }
 )
