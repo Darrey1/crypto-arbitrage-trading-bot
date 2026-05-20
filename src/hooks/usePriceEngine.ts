@@ -1,52 +1,72 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { io, Socket } from 'socket.io-client'
+import { useAuthStore } from '@/store/useAuthStore'
 import { useBotStore } from '@/store/useBotStore'
-import { tickPrices, detectOpportunity } from '@/lib/mockPriceEngine'
+import type { BotLog, BotState, Opportunity, PortfolioBalance, PortfolioHistoryPoint, PriceData, Trade } from '@/api/types'
 
 export function usePriceEngine() {
-  const { botState, config, updatePrice, addOpportunity } = useBotStore()
-  const intervalRef = useRef<NodeJS.Timeout | null>(null)
-  const oppCooldownRef = useRef<number>(0)
+  const token = useAuthStore((state) => state.accessToken)
+  const hydrated = useAuthStore((state) => state.hydrated)
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const refreshAll = useBotStore((state) => state.refreshAll)
+  const refreshPrices = useBotStore((state) => state.refreshPrices)
+  const applyRealtimeEvent = useBotStore((state) => state.applyRealtimeEvent)
+  const setSocketConnected = useBotStore((state) => state.setSocketConnected)
+  const socketRef = useRef<Socket | null>(null)
 
   useEffect(() => {
-    // Always tick prices regardless of bot state for live display
-    const priceInterval = setInterval(() => {
-      const ticks = tickPrices(config.symbol)
-      ticks.forEach(t => updatePrice(t))
-    }, 1000)
-
-    return () => clearInterval(priceInterval)
-  }, [config.symbol, updatePrice])
-
-  useEffect(() => {
-    if (botState.status !== 'running') {
-      if (intervalRef.current) clearInterval(intervalRef.current)
+    if (!hydrated || !isAuthenticated || !token) {
       return
     }
 
-    intervalRef.current = setInterval(() => {
-      const ticks = tickPrices(config.symbol)
-      ticks.forEach(t => updatePrice(t))
+    refreshAll().catch(() => undefined)
 
-      const now = Date.now()
-      if (now - oppCooldownRef.current < config.cooldownSeconds * 1000) return
+    const wsUrl = process.env.NEXT_PUBLIC_WS_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000'
+    const socket = io(wsUrl, {
+      transports: ['websocket'],
+      auth: { token },
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+    })
 
-      const opp = detectOpportunity(
-        ticks,
-        config.minSpreadThreshold,
-        config.maxTradeSize,
-        config.symbol,
-      )
+    socketRef.current = socket
 
-      if (opp) {
-        oppCooldownRef.current = now
-        addOpportunity(opp)
-      }
-    }, 800)
+    socket.on('connect', () => setSocketConnected(true))
+    socket.on('disconnect', () => setSocketConnected(false))
+    socket.on('connect_error', () => setSocketConnected(false))
+    socket.on('prices:update', (payload: PriceData[]) => applyRealtimeEvent({ type: 'prices:update', payload }))
+    socket.on('opportunity:new', (payload: Opportunity) => applyRealtimeEvent({ type: 'opportunity:new', payload }))
+    socket.on('trade:new', (payload: Trade) => applyRealtimeEvent({ type: 'trade:new', payload }))
+    socket.on('bot:status', (payload: BotState) => applyRealtimeEvent({ type: 'bot:status', payload }))
+    socket.on('bot:log', (payload: BotLog) => applyRealtimeEvent({ type: 'bot:log', payload }))
+    socket.on('portfolio:update', (payload: PortfolioBalance[] | PortfolioHistoryPoint[]) => {
+      applyRealtimeEvent({ type: 'portfolio:update', payload })
+    })
+
+    const priceFallback = window.setInterval(() => {
+      refreshPrices().catch(() => undefined)
+    }, 10_000)
+
+    const snapshotFallback = window.setInterval(() => {
+      refreshAll().catch(() => undefined)
+    }, 60_000)
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
+      window.clearInterval(priceFallback)
+      window.clearInterval(snapshotFallback)
+      socket.disconnect()
+      socketRef.current = null
+      setSocketConnected(false)
     }
-  }, [botState.status, config, updatePrice, addOpportunity])
+  }, [applyRealtimeEvent, hydrated, isAuthenticated, refreshAll, refreshPrices, setSocketConnected, token])
+
+  useEffect(() => {
+    if (!hydrated || !isAuthenticated) {
+      return
+    }
+  }, [hydrated, isAuthenticated])
 }

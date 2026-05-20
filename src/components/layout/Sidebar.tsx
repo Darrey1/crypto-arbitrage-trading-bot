@@ -6,8 +6,8 @@ import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { useBotStore } from '@/store/useBotStore'
 import {
-  LayoutDashboard, TrendingUp, Bot, History, PieChart,
-  BarChart3, Settings, Shield, ChevronLeft, ChevronRight,
+  LayoutDashboard, TrendingUp, History, PieChart,
+  BarChart3, Settings, ChevronLeft, ChevronRight,
   Activity, Cpu
 } from 'lucide-react'
 
@@ -24,22 +24,22 @@ const NAV_ITEMS = [
 export function Sidebar() {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
-  const { botState, config } = useBotStore()
+  const { botState, config, socketConnected } = useBotStore()
 
   const statusDot = {
-    running: 'bg-emerald-400 shadow-[0_0_7px_rgba(34,197,94,0.7)]',
-    idle:    'bg-zinc-500',
-    paused:  'bg-amber-400 shadow-[0_0_7px_rgba(245,158,11,0.7)]',
-    error:   'bg-red-400 shadow-[0_0_7px_rgba(239,68,68,0.7)]',
-    stopped: 'bg-zinc-600',
+    RUNNING: 'bg-emerald-400 shadow-[0_0_7px_rgba(34,197,94,0.7)]',
+    IDLE:    'bg-zinc-500',
+    PAUSED:  'bg-amber-400 shadow-[0_0_7px_rgba(245,158,11,0.7)]',
+    ERROR:   'bg-red-400 shadow-[0_0_7px_rgba(239,68,68,0.7)]',
+    STOPPED: 'bg-zinc-600',
   }[botState.status] ?? 'bg-zinc-500'
 
   const statusLabel = {
-    running: 'Bot Running',
-    idle:    'Bot Idle',
-    paused:  'Bot Paused',
-    error:   'Bot Error',
-    stopped: 'Bot Stopped',
+    RUNNING: 'Bot Running',
+    IDLE:    'Bot Idle',
+    PAUSED:  'Bot Paused',
+    ERROR:   'Bot Error',
+    STOPPED: 'Bot Stopped',
   }[botState.status] ?? 'Unknown'
 
   return (
@@ -85,18 +85,18 @@ export function Sidebar() {
           <div
             className={cn(
               'mb-2.5 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2',
-              config.tradingMode === 'paper'
+              config.executionMode === 'PAPER'
                 ? 'text-amber-400 border border-amber-500/20'
                 : 'text-emerald-400 border border-emerald-500/20'
             )}
             style={{
-              background: config.tradingMode === 'paper'
+              background: config.executionMode === 'PAPER'
                 ? 'rgba(245,158,11,0.08)'
                 : 'rgba(34,197,94,0.08)',
             }}
           >
-            <div className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', config.tradingMode === 'paper' ? 'bg-amber-400' : 'bg-emerald-400')} />
-            {config.tradingMode === 'paper' ? 'Paper Trading' : 'Live Trading'}
+            <div className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', config.executionMode === 'PAPER' ? 'bg-amber-400' : 'bg-emerald-400')} />
+            {config.executionMode === 'PAPER' ? 'Paper Trading' : 'Live Trading'}
           </div>
         )}
 
@@ -124,7 +124,7 @@ export function Sidebar() {
         })}
 
         {/* Admin link */}
-        <div
+        {/* <div
           className={cn('pt-2 mt-1', !collapsed && 'border-t')}
           style={{ borderColor: 'var(--border-subtle)' }}
         >
@@ -145,7 +145,7 @@ export function Sidebar() {
               <Shield className="w-4 h-4" />
             </Link>
           )}
-        </div>
+        </div> */}
       </nav>
 
       {/* Bot status pill */}
@@ -154,16 +154,16 @@ export function Sidebar() {
         style={{ borderTop: '1px solid var(--border-subtle)' }}
       >
         {collapsed ? (
-          <div title={statusLabel} className={cn('w-2 h-2 rounded-full', statusDot)} />
+          <div title={socketConnected ? statusLabel : 'Offline'} className={cn('w-2 h-2 rounded-full', statusDot)} />
         ) : (
           <div className="glass-subtle rounded-lg px-3 py-2 flex items-center gap-2.5">
             <div className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0 animate-pulse-dot', statusDot)} />
             <div className="flex-1 min-w-0">
               <div className="text-xs font-medium truncate" style={{ color: 'var(--text-1)' }}>
-                {statusLabel}
+                {socketConnected ? statusLabel : 'Realtime disconnected'}
               </div>
               <div className="text-[10px] font-mono truncate" style={{ color: 'var(--text-3)' }}>
-                {botState.tradesExecuted} trades today
+                {botState.totalTrades} trades total
               </div>
             </div>
           </div>

@@ -4,9 +4,10 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Toaster } from 'sonner'
+import { AuthGuard } from '@/components/AuthGuard'
 import {
   LayoutDashboard, Users, Bot, History,
-  Settings, FileText, ChevronLeft, Shield, Activity
+  Settings, FileText, ChevronLeft, Shield
 } from 'lucide-react'
 
 const ADMIN_NAV = [
@@ -22,6 +23,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname()
 
   return (
+    <AuthGuard>
     <div
       className="min-h-screen grid-pattern flex"
       style={{ background: 'var(--bg)' }}
@@ -128,5 +130,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         }}
       />
     </div>
+    </AuthGuard>
   )
 }

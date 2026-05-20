@@ -11,7 +11,7 @@ interface PriceState {
   trend: number
 }
 
-let priceState: PriceState = {
+const priceState: PriceState = {
   binance: BASE_ETH_PRICE,
   kraken: BASE_ETH_PRICE * 1.0008,
   kucoin: BASE_ETH_PRICE * 0.9994,

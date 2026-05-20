@@ -1,42 +1,43 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Bell, ChevronDown, LogOut, Settings, FlaskConical, Zap, Sun, Moon } from 'lucide-react'
 import { useBotStore } from '@/store/useBotStore'
 import { useThemeStore } from '@/store/useThemeStore'
+import { useAuthStore } from '@/store/useAuthStore'
 import { cn, formatPrice } from '@/lib/utils'
-import { TradingMode } from '@/types'
+import { toast } from 'sonner'
 
 export function Header({ title }: { title?: string }) {
-  const { config, setTradingMode, prices, botState } = useBotStore()
+  const router = useRouter()
+  const { config, updateConfig, prices, botState, socketConnected, opportunities, trades } = useBotStore()
   const { theme, toggleTheme } = useThemeStore()
-  const [ethPrice, setEthPrice] = useState<number | null>(null)
-  const [priceDir, setPriceDir] = useState<'up' | 'down' | 'neutral'>('neutral')
+  const { user, logout } = useAuthStore()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
 
   const binanceTick = prices['binance:ETH/USDT']
 
-  useEffect(() => {
-    if (!binanceTick) return
-    setEthPrice(prev => {
-      if (prev !== null) {
-        setPriceDir(binanceTick.last > prev ? 'up' : binanceTick.last < prev ? 'down' : 'neutral')
-        setTimeout(() => setPriceDir('neutral'), 800)
-      }
-      return binanceTick.last
-    })
-  }, [binanceTick?.last])
-
-  function handleModeSwitch(mode: TradingMode) {
-    setTradingMode(mode)
+  function handleModeSwitch(mode: 'PAPER' | 'LIVE') {
+    updateConfig({ executionMode: mode })
   }
+
+  function handleLogout() {
+    logout()
+    setUserMenuOpen(false)
+    toast.success('Signed out')
+    router.replace('/auth/login')
+  }
+
+  const activeOpportunities = opportunities.length
+  const recentTrades = trades.slice(0, 3)
 
   return (
     <>
       {/* Paper mode banner */}
-      {config.tradingMode === 'paper' && (
+      {config.executionMode === 'PAPER' && (
         <div className="paper-mode-banner">
           <FlaskConical className="w-3 h-3 inline-block mr-1.5 -mt-px" />
           PAPER TRADING MODE — Simulated trades only. No real funds at risk.
@@ -62,30 +63,32 @@ export function Header({ title }: { title?: string }) {
 
         <div className="flex-1" />
 
+        <div className="hidden sm:flex items-center gap-2 text-xs mr-1.5">
+          <span className={cn('w-2 h-2 rounded-full', socketConnected ? 'bg-emerald-400' : 'bg-amber-400')} />
+          <span style={{ color: 'var(--text-3)' }}>{socketConnected ? 'Live' : 'Reconnecting'}</span>
+        </div>
+
         {/* ETH Price Pill */}
         <div
           className={cn(
             'hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg glass-subtle text-xs font-mono transition-colors duration-300',
-            priceDir === 'up' && 'text-emerald-400',
-            priceDir === 'down' && 'text-red-400',
-            priceDir === 'neutral' && ''
           )}
-          style={priceDir === 'neutral' ? { color: 'var(--text-1)' } : undefined}
+          style={{ color: 'var(--text-1)' }}
         >
           <div className="live-dot" />
           <span style={{ color: 'var(--text-3)' }}>ETH</span>
           <span className="font-semibold">
-            ${ethPrice ? formatPrice(ethPrice) : '3,245.50'}
+            ${binanceTick ? formatPrice(binanceTick.lastPrice) : '3,245.50'}
           </span>
         </div>
 
         {/* Trading Mode Toggle */}
         <div className="flex items-center glass-subtle rounded-lg p-0.5 gap-0.5">
           <button
-            onClick={() => handleModeSwitch('paper')}
+            onClick={() => handleModeSwitch('PAPER')}
             className={cn(
               'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all duration-200',
-              config.tradingMode === 'paper'
+              config.executionMode === 'PAPER'
                 ? 'bg-amber-500/15 text-amber-400 border border-amber-500/25'
                 : 'text-slate-500 hover:text-slate-300'
             )}
@@ -94,10 +97,10 @@ export function Header({ title }: { title?: string }) {
             <span className="hidden sm:inline">Paper</span>
           </button>
           <button
-            onClick={() => handleModeSwitch('live')}
+            onClick={() => handleModeSwitch('LIVE')}
             className={cn(
               'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all duration-200',
-              config.tradingMode === 'live'
+              config.executionMode === 'LIVE'
                 ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
                 : 'text-slate-500 hover:text-slate-300'
             )}
@@ -132,7 +135,7 @@ export function Header({ title }: { title?: string }) {
             onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-3)')}
           >
             <Bell className="w-3.5 h-3.5" />
-            {botState.opportunitiesDetected > 0 && (
+            {activeOpportunities > 0 && (
               <span
                 className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full"
                 style={{ background: 'var(--accent)' }}
@@ -153,30 +156,27 @@ export function Header({ title }: { title?: string }) {
                   Notifications
                 </span>
                 <span className="badge-purple text-[10px] px-1.5 py-0.5 rounded-full">
-                  {botState.opportunitiesDetected}
+                  {activeOpportunities}
                 </span>
               </div>
               <div className="max-h-64 overflow-y-auto p-3 space-y-2">
-                <div className="glass-subtle rounded-lg p-3 opportunity-flash">
-                  <div className="text-xs font-medium" style={{ color: 'var(--accent)' }}>
-                    Opportunity Detected
+                {recentTrades.length === 0 ? (
+                  <div className="text-xs text-center py-6" style={{ color: 'var(--text-3)' }}>
+                    No recent trades yet.
                   </div>
-                  <div className="text-[11px] mt-0.5" style={{ color: 'var(--text-2)' }}>
-                    ETH/USDT spread 0.42% on Binance→Kraken
+                ) : recentTrades.map((trade) => (
+                  <div key={trade.id} className="glass-subtle rounded-lg p-3">
+                    <div className="text-xs font-medium text-emerald-400">
+                      Trade Executed
+                    </div>
+                    <div className="text-[11px] mt-0.5" style={{ color: 'var(--text-2)' }}>
+                      {trade.pair} {trade.route}
+                    </div>
+                    <div className="text-[10px] mt-1" style={{ color: 'var(--text-3)' }}>
+                      {trade.netProfit >= 0 ? '+' : ''}${trade.netProfit.toFixed(2)}
+                    </div>
                   </div>
-                  <div className="text-[10px] mt-1" style={{ color: 'var(--text-3)' }}>
-                    Just now
-                  </div>
-                </div>
-                <div className="glass-subtle rounded-lg p-3">
-                  <div className="text-xs font-medium text-emerald-400">Trade Executed</div>
-                  <div className="text-[11px] mt-0.5" style={{ color: 'var(--text-2)' }}>
-                    Paper trade: +$4.82 profit
-                  </div>
-                  <div className="text-[10px] mt-1" style={{ color: 'var(--text-3)' }}>
-                    2m ago
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           )}
@@ -194,10 +194,10 @@ export function Header({ title }: { title?: string }) {
             <div
               className="w-6 h-6 rounded-full gradient-bg flex items-center justify-center text-[#070707] text-xs font-bold"
             >
-              T
+              {(user?.email?.[0] ?? 'T').toUpperCase()}
             </div>
             <span className="text-xs hidden sm:block" style={{ color: 'var(--text-2)' }}>
-              Trader
+              {user?.email ?? 'Trader'}
             </span>
             <ChevronDown className="w-3 h-3" style={{ color: 'var(--text-3)' }} />
           </button>
@@ -212,10 +212,10 @@ export function Header({ title }: { title?: string }) {
                 style={{ borderBottom: '1px solid var(--border-subtle)' }}
               >
                 <div className="text-xs font-semibold" style={{ color: 'var(--text-1)' }}>
-                  Trader
+                  {user?.email ?? 'Trader'}
                 </div>
                 <div className="text-[11px]" style={{ color: 'var(--text-3)' }}>
-                  trader@arbmatrix.io
+                  {user?.role ?? 'USER'}
                 </div>
               </div>
               <div className="p-2 space-y-0.5">
@@ -229,13 +229,13 @@ export function Header({ title }: { title?: string }) {
                   <Settings className="w-3.5 h-3.5" style={{ color: 'var(--text-3)' }} />
                   Settings
                 </Link>
-                <Link
-                  href="/auth/login"
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-red-400 transition-colors hover:bg-red-500/8"
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-red-400 transition-colors hover:bg-red-500/8"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   Sign Out
-                </Link>
+                </button>
               </div>
             </div>
           )}

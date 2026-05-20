@@ -100,7 +100,7 @@ export default function AdminDashboard() {
                 tickFormatter={v => `$${(v / 1000).toFixed(0)}K`} />
               <Tooltip
                 contentStyle={{ background: '#0D1117', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, fontSize: 11 }}
-                formatter={(v: any) => [`$${v.toLocaleString()}`, 'Volume']}
+                formatter={(value) => [`$${Number(value ?? 0).toLocaleString()}`, 'Volume']}
               />
               <Bar dataKey="volume" fill="#7C3AED" fillOpacity={0.6} radius={[4, 4, 0, 0]} />
             </BarChart>

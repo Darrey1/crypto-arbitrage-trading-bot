@@ -2,6 +2,7 @@
 
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
+import { AuthGuard } from '@/components/AuthGuard'
 import { usePriceEngine } from '@/hooks/usePriceEngine'
 import { Toaster } from 'sonner'
 import { usePathname } from 'next/navigation'
@@ -26,32 +27,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const title = PAGE_TITLES[pathname] ?? 'Dashboard'
 
   return (
-    <PriceEngineProvider>
-      <div
-        className="min-h-screen grid-pattern"
-        style={{ background: 'var(--bg)' }}
-      >
-        <Sidebar />
+    <AuthGuard>
+      <PriceEngineProvider>
+        <div
+          className="min-h-screen grid-pattern"
+          style={{ background: 'var(--bg)' }}
+        >
+          <Sidebar />
 
-        <div className="ml-[230px] flex flex-col min-h-screen transition-all duration-300">
-          <Header title={title} />
-          <main className="flex-1 p-6 overflow-x-hidden">
-            {children}
-          </main>
+          <div className="ml-[230px] flex flex-col min-h-screen transition-all duration-300">
+            <Header title={title} />
+            <main className="flex-1 p-6 overflow-x-hidden">
+              {children}
+            </main>
+          </div>
         </div>
-      </div>
 
-      <Toaster
-        position="bottom-right"
-        toastOptions={{
-          style: {
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            color: 'var(--text-1)',
-            fontSize: '13px',
-          },
-        }}
-      />
-    </PriceEngineProvider>
+        <Toaster
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              color: 'var(--text-1)',
+              fontSize: '13px',
+            },
+          }}
+        />
+      </PriceEngineProvider>
+    </AuthGuard>
   )
 }
