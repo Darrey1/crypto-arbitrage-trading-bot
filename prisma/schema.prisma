@@ -1,0 +1,214 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+enum ExchangeName {
+  BINANCE
+  KRAKEN
+  KUCOIN
+}
+
+enum TradeMode {
+  PAPER
+  LIVE
+}
+
+enum BotStatus {
+  IDLE
+  RUNNING
+  PAUSED
+  STOPPED
+  ERROR
+}
+
+enum TradeStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum OpportunityStatus {
+  NEW
+  EXECUTED
+  EXPIRED
+  REJECTED
+}
+
+enum LogLevel {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+}
+
+model User {
+  id            String             @id @default(cuid())
+  email         String             @unique
+  passwordHash   String
+  role          UserRole           @default(USER)
+  status        UserStatus         @default(ACTIVE)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  wallet        Wallet?
+  botConfig     BotConfig?
+  botState      BotState?
+  refreshTokens RefreshToken[]
+  trades        Trade[]
+  opportunities Opportunity[]
+  logs          BotLog[]
+  portfolios    PortfolioSnapshot[]
+}
+
+model Wallet {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  address              String   @unique
+  encryptedPrivateKey  String
+  iv                   String
+  authTag              String
+  keyVersion           Int      @default(1)
+  chainId              Int      @default(1)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RefreshToken {
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model BotConfig {
+  id                 String     @id @default(cuid())
+  userId             String     @unique
+  tradingPair        String     @default("ETH/USDT")
+  executionMode      TradeMode  @default(PAPER)
+  minSpreadThreshold Float      @default(0.003)
+  maxTradeSize       Float      @default(1000)
+  maxDailyTrades     Int        @default(50)
+  slippageTolerance  Float      @default(0.001)
+  dailyLossLimit     Float      @default(100)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  user               User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model BotState {
+  id               String     @id @default(cuid())
+  userId           String     @unique
+  status           BotStatus  @default(IDLE)
+  currentMode      TradeMode  @default(PAPER)
+  totalOpportunities Int      @default(0)
+  totalTrades      Int        @default(0)
+  todayPnl         Float      @default(0)
+  winRate          Float      @default(0)
+  lastStartedAt    DateTime?
+  lastStoppedAt    DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PriceSnapshot {
+  id          String        @id @default(cuid())
+  exchange    ExchangeName
+  pair        String
+  lastPrice   Float
+  bid         Float
+  ask         Float
+  volume24h   Float?
+  high24h     Float?
+  low24h      Float?
+  latencyMs   Int?
+  timestamp   DateTime      @default(now())
+
+  @@index([exchange, pair, timestamp])
+}
+
+model Opportunity {
+  id            String            @id @default(cuid())
+  userId        String?
+  pair          String
+  buyExchange   ExchangeName
+  sellExchange  ExchangeName
+  spread        Float
+  netSpread     Float
+  estProfit     Float
+  confidence    Float
+  status        OpportunityStatus @default(NEW)
+  metadata      Json?
+  createdAt     DateTime          @default(now())
+  executedAt    DateTime?
+  user          User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([pair, createdAt])
+}
+
+model Trade {
+  id           String       @id @default(cuid())
+  userId       String?
+  pair         String
+  buyExchange  ExchangeName
+  sellExchange ExchangeName
+  buyPrice     Float
+  sellPrice    Float
+  amount       Float
+  fees         Float
+  netProfit    Float
+  status       TradeStatus  @default(PENDING)
+  mode         TradeMode    @default(PAPER)
+  route        String
+  executedAt   DateTime?
+  settledAt    DateTime?
+  createdAt    DateTime     @default(now())
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+}
+
+model BotLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  level      LogLevel  @default(INFO)
+  message    String
+  metadata   Json?
+  createdAt  DateTime  @default(now())
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+}
+
+model PortfolioSnapshot {
+  id          String   @id @default(cuid())
+  userId      String?
+  totalValue  Float
+  dailyChange Float?
+  allocations Json?
+  createdAt   DateTime @default(now())
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+}
