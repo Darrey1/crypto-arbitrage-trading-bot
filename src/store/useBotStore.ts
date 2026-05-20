@@ -21,32 +21,12 @@ import type {
 
 export type RealtimeEventPayloads =
   | { type: 'prices:update'; payload: PriceData[] }
+  | { type: 'price:tick'; payload: PriceData }
   | { type: 'opportunity:new'; payload: Opportunity }
   | { type: 'trade:new'; payload: Trade }
   | { type: 'bot:status'; payload: BotState }
   | { type: 'bot:log'; payload: BotLog }
   | { type: 'portfolio:update'; payload: PortfolioBalance[] | PortfolioHistoryPoint[] }
-
-const DEFAULT_CONFIG: BotConfig = {
-  tradingPair: 'ETH/USDT',
-  executionMode: 'PAPER',
-  minSpreadThreshold: 0.3,
-  maxTradeSize: 1000,
-  maxDailyTrades: 50,
-  slippageTolerance: 0.1,
-  dailyLossLimit: 200,
-}
-
-const DEFAULT_BOT_STATE: BotState = {
-  status: 'IDLE',
-  currentMode: 'PAPER',
-  totalOpportunities: 0,
-  totalTrades: 0,
-  todayPnl: 0,
-  winRate: 0,
-  lastStartedAt: null,
-  lastStoppedAt: null,
-}
 
 function priceKey(exchange: string, pair: string) {
   return `${exchange.toLowerCase()}:${pair}`
@@ -75,8 +55,8 @@ function mergeHistory(existing: PortfolioHistoryPoint[], incoming: PortfolioHist
 }
 
 interface TradingStore {
-  botState: BotState
-  config: BotConfig
+  botState: BotState | null
+  config: BotConfig | null
   logs: BotLog[]
   opportunities: Opportunity[]
   trades: Trade[]
@@ -86,11 +66,12 @@ interface TradingStore {
   tradeStats: TradeStats | null
   wallet: WalletPublicView | null
   socketConnected: boolean
+  lastPriceTick: PriceData | null
   loading: boolean
   error: string | null
 
-  refreshAll: () => Promise<void>
-  refreshPrices: () => Promise<void>
+  refreshAll: (options?: { silent?: boolean }) => Promise<void>
+  refreshPrices: (options?: { silent?: boolean }) => Promise<void>
   refreshTrades: (params?: { page?: number; limit?: number; status?: string; pair?: string }) => Promise<void>
   startBot: () => Promise<void>
   stopBot: () => Promise<void>
@@ -107,9 +88,9 @@ function normalizeError(error: unknown) {
   return 'Unable to load trading data.'
 }
 
-export const useBotStore = create<TradingStore>()((set, get) => ({
-  botState: DEFAULT_BOT_STATE,
-  config: DEFAULT_CONFIG,
+export const useBotStore = create<TradingStore>()((set) => ({
+  botState: null,
+  config: null,
   logs: [],
   opportunities: [],
   trades: [],
@@ -119,11 +100,15 @@ export const useBotStore = create<TradingStore>()((set, get) => ({
   tradeStats: null,
   wallet: null,
   socketConnected: false,
+  lastPriceTick: null,
   loading: false,
   error: null,
 
-  refreshAll: async () => {
-    set({ loading: true, error: null })
+  refreshAll: async (options) => {
+    const silent = options?.silent ?? false
+    if (!silent) {
+      set({ loading: true, error: null })
+    }
     try {
       const [statusRes, configRes, opportunitiesRes, logsRes, tradesRes, pricesRes, balancesRes, historyRes, statsRes, walletRes] =
         await Promise.all([
@@ -152,72 +137,98 @@ export const useBotStore = create<TradingStore>()((set, get) => ({
         wallet: walletRes.data.data,
       })
     } catch (error) {
-      set({ error: normalizeError(error) })
+      const message = normalizeError(error)
+      if (!silent) {
+        set({ error: message })
+      }
+      throw new Error(message)
     } finally {
-      set({ loading: false })
+      if (!silent) {
+        set({ loading: false })
+      }
     }
   },
 
-  refreshPrices: async () => {
+  refreshPrices: async (options) => {
+    const silent = options?.silent ?? false
     try {
       const response = await pricesApi.getCurrent()
-      set((state) => ({ prices: upsertPrices(state.prices, response.data.data) }))
+      set((state) => ({ prices: upsertPrices(state.prices, response.data.data), error: silent ? state.error : null }))
     } catch (error) {
-      set({ error: normalizeError(error) })
+      const message = normalizeError(error)
+      if (!silent) {
+        set({ error: message })
+        throw new Error(message)
+      }
     }
   },
 
   refreshTrades: async (params) => {
     try {
       const response = await tradesApi.getAll(params)
-      set({ trades: response.data.data.items })
+      set({ trades: response.data.data.items, error: null })
     } catch (error) {
-      set({ error: normalizeError(error) })
+      const message = normalizeError(error)
+      set({ error: message })
+      throw new Error(message)
     }
   },
 
   startBot: async () => {
     try {
       const response = await botApi.start()
-      set({ botState: response.data.data })
+      set({ botState: response.data.data, error: null })
     } catch (error) {
-      set({ error: normalizeError(error) })
+      const message = normalizeError(error)
+      set({ error: message })
+      throw new Error(message)
     }
   },
 
   stopBot: async () => {
     try {
       const response = await botApi.stop()
-      set({ botState: response.data.data })
+      set({ botState: response.data.data, error: null })
     } catch (error) {
-      set({ error: normalizeError(error) })
+      const message = normalizeError(error)
+      set({ error: message })
+      throw new Error(message)
     }
   },
 
   pauseBot: async () => {
     try {
       const response = await botApi.pause()
-      set({ botState: response.data.data })
+      set({ botState: response.data.data, error: null })
     } catch (error) {
-      set({ error: normalizeError(error) })
+      const message = normalizeError(error)
+      set({ error: message })
+      throw new Error(message)
     }
   },
 
   updateConfig: async (partial) => {
+    if (!partial || Object.keys(partial).length === 0) {
+      return
+    }
     try {
       const response = await botApi.updateConfig(partial)
-      set({ config: response.data.data })
+      set({ config: response.data.data, error: null })
     } catch (error) {
-      set({ error: normalizeError(error) })
+      const message = normalizeError(error)
+      set({ error: message })
+      throw new Error(message)
     }
   },
 
   rotateWallet: async () => {
     try {
       const response = await walletApi.rotate()
-      set({ wallet: response.data.data })
+      set({ wallet: response.data.data, error: null })
     } catch (error) {
-      set({ error: normalizeError(error) })
+      const message = normalizeError(error)
+      set({ error: message })
+      throw new Error(message)
     }
   },
 
@@ -229,13 +240,23 @@ export const useBotStore = create<TradingStore>()((set, get) => ({
       return
     }
 
+    if (event.type === 'price:tick') {
+      set((state) => ({
+        prices: upsertPrices(state.prices, [event.payload]),
+        lastPriceTick: event.payload,
+      }))
+      return
+    }
+
     if (event.type === 'opportunity:new') {
       set((state) => ({
         opportunities: putNewestFirst(state.opportunities, event.payload, 100),
-        botState: {
-          ...state.botState,
-          totalOpportunities: state.botState.totalOpportunities + 1,
-        },
+        botState: state.botState
+          ? {
+              ...state.botState,
+              totalOpportunities: state.botState.totalOpportunities + 1,
+            }
+          : state.botState,
       }))
       return
     }
@@ -243,10 +264,12 @@ export const useBotStore = create<TradingStore>()((set, get) => ({
     if (event.type === 'trade:new') {
       set((state) => ({
         trades: putNewestFirst(state.trades, event.payload, 200),
-        botState: {
-          ...state.botState,
-          totalTrades: state.botState.totalTrades + 1,
-        },
+        botState: state.botState
+          ? {
+              ...state.botState,
+              totalTrades: state.botState.totalTrades + 1,
+            }
+          : state.botState,
       }))
       return
     }

@@ -25,6 +25,9 @@ export function Sidebar() {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
   const { botState, config, socketConnected } = useBotStore()
+  const executionMode = config?.executionMode ?? 'PAPER'
+  const botStatus = botState?.status ?? 'IDLE'
+  const totalTrades = botState?.totalTrades ?? 0
 
   const statusDot = {
     RUNNING: 'bg-emerald-400 shadow-[0_0_7px_rgba(34,197,94,0.7)]',
@@ -32,7 +35,7 @@ export function Sidebar() {
     PAUSED:  'bg-amber-400 shadow-[0_0_7px_rgba(245,158,11,0.7)]',
     ERROR:   'bg-red-400 shadow-[0_0_7px_rgba(239,68,68,0.7)]',
     STOPPED: 'bg-zinc-600',
-  }[botState.status] ?? 'bg-zinc-500'
+  }[botStatus] ?? 'bg-zinc-500'
 
   const statusLabel = {
     RUNNING: 'Bot Running',
@@ -40,7 +43,7 @@ export function Sidebar() {
     PAUSED:  'Bot Paused',
     ERROR:   'Bot Error',
     STOPPED: 'Bot Stopped',
-  }[botState.status] ?? 'Unknown'
+  }[botStatus] ?? 'Unknown'
 
   return (
     <aside
@@ -85,18 +88,18 @@ export function Sidebar() {
           <div
             className={cn(
               'mb-2.5 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2',
-              config.executionMode === 'PAPER'
+              executionMode === 'PAPER'
                 ? 'text-amber-400 border border-amber-500/20'
                 : 'text-emerald-400 border border-emerald-500/20'
             )}
             style={{
-              background: config.executionMode === 'PAPER'
+              background: executionMode === 'PAPER'
                 ? 'rgba(245,158,11,0.08)'
                 : 'rgba(34,197,94,0.08)',
             }}
           >
-            <div className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', config.executionMode === 'PAPER' ? 'bg-amber-400' : 'bg-emerald-400')} />
-            {config.executionMode === 'PAPER' ? 'Paper Trading' : 'Live Trading'}
+            <div className={cn('w-1.5 h-1.5 rounded-full flex-shrink-0', executionMode === 'PAPER' ? 'bg-amber-400' : 'bg-emerald-400')} />
+            {executionMode === 'PAPER' ? 'Paper Trading' : 'Live Trading'}
           </div>
         )}
 
@@ -163,7 +166,7 @@ export function Sidebar() {
                 {socketConnected ? statusLabel : 'Realtime disconnected'}
               </div>
               <div className="text-[10px] font-mono truncate" style={{ color: 'var(--text-3)' }}>
-                {botState.totalTrades} trades total
+                {totalTrades} trades total
               </div>
             </div>
           </div>

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Bell, ChevronDown, LogOut, Settings, FlaskConical, Zap, Sun, Moon } from 'lucide-react'
+import { Bell, ChevronDown, LogOut, Settings, FlaskConical, Zap, Sun, Moon, Loader } from 'lucide-react'
 import { useBotStore } from '@/store/useBotStore'
 import { useThemeStore } from '@/store/useThemeStore'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -12,16 +12,34 @@ import { toast } from 'sonner'
 
 export function Header({ title }: { title?: string }) {
   const router = useRouter()
-  const { config, updateConfig, prices, botState, socketConnected, opportunities, trades } = useBotStore()
+  const { config, updateConfig, prices, socketConnected, opportunities, trades } = useBotStore()
   const { theme, toggleTheme } = useThemeStore()
+  const [loading, setLoading] = useState(false)
+  const [currentMode, setCurrentMode] = useState<'PAPER' | 'LIVE' | null>(null)
   const { user, logout } = useAuthStore()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [notifOpen, setNotifOpen] = useState(false)
-
-  const binanceTick = prices['binance:ETH/USDT']
+  const selectedPair = config?.tradingPair ?? 'ETH/USDT'
+  const executionMode = config?.executionMode ?? 'PAPER'
+  const BASE_CURRENCY = selectedPair.split('/')[0]
+  const binanceTick = prices[`binance:${selectedPair}`]
 
   function handleModeSwitch(mode: 'PAPER' | 'LIVE') {
+    if (!config) return
+
+    setLoading(true)
+    setCurrentMode(mode)
     updateConfig({ executionMode: mode })
+      .then(() => {
+        toast.success(`Switched to ${mode === 'PAPER' ? 'Paper Trading' : 'Live Trading'} mode`)
+      })
+      .catch(() => {
+        toast.error('Failed to switch trading mode')
+      })
+      .finally(() => {
+        setLoading(false)
+        setCurrentMode(null)
+      })
   }
 
   function handleLogout() {
@@ -31,13 +49,16 @@ export function Header({ title }: { title?: string }) {
     router.replace('/auth/login')
   }
 
+  const isSwitching = (mode: 'PAPER' | 'LIVE') =>
+  loading && currentMode?.toUpperCase() === mode
+
   const activeOpportunities = opportunities.length
   const recentTrades = trades.slice(0, 3)
 
   return (
     <>
       {/* Paper mode banner */}
-      {config.executionMode === 'PAPER' && (
+      {executionMode === 'PAPER' && (
         <div className="paper-mode-banner">
           <FlaskConical className="w-3 h-3 inline-block mr-1.5 -mt-px" />
           PAPER TRADING MODE — Simulated trades only. No real funds at risk.
@@ -76,9 +97,9 @@ export function Header({ title }: { title?: string }) {
           style={{ color: 'var(--text-1)' }}
         >
           <div className="live-dot" />
-          <span style={{ color: 'var(--text-3)' }}>ETH</span>
+          <span style={{ color: 'var(--text-3)' }}>{BASE_CURRENCY}</span>
           <span className="font-semibold">
-            ${binanceTick ? formatPrice(binanceTick.lastPrice) : '3,245.50'}
+            ${binanceTick ? formatPrice(binanceTick.lastPrice) : '--'}
           </span>
         </div>
 
@@ -88,24 +109,24 @@ export function Header({ title }: { title?: string }) {
             onClick={() => handleModeSwitch('PAPER')}
             className={cn(
               'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all duration-200',
-              config.executionMode === 'PAPER'
+              executionMode === 'PAPER'
                 ? 'bg-amber-500/15 text-amber-400 border border-amber-500/25'
                 : 'text-slate-500 hover:text-slate-300'
             )}
           >
-            <FlaskConical className="w-3 h-3" />
+            {isSwitching('PAPER') ? <Loader className="w-3 h-3 animate-spin" /> : <FlaskConical className="w-3 h-3" />}
             <span className="hidden sm:inline">Paper</span>
           </button>
           <button
             onClick={() => handleModeSwitch('LIVE')}
             className={cn(
               'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all duration-200',
-              config.executionMode === 'LIVE'
+              executionMode === 'LIVE'
                 ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25'
                 : 'text-slate-500 hover:text-slate-300'
             )}
           >
-            <Zap className="w-3 h-3" />
+            {isSwitching('LIVE') ? <Loader className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
             <span className="hidden sm:inline">Live</span>
           </button>
         </div>

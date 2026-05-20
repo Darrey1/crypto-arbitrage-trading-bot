@@ -5,6 +5,7 @@ import { ArrowRight, Activity, Search, TrendingUp, TrendingDown } from 'lucide-r
 import { useBotStore } from '@/store/useBotStore'
 import { cn, EXCHANGES, formatPercent, formatPrice, calculateNetSpread } from '@/lib/utils'
 import type { PriceData } from '@/api/types'
+import { PriceComparisonChart } from '@/components/dashboard/PriceComparisonChart'
 
 const EXCHANGE_IDS = ['binance', 'kraken', 'kucoin'] as const
 
@@ -234,6 +235,8 @@ export default function MarketsPage() {
 
   return (
     <div className="space-y-6">
+      <PriceComparisonChart pair={selected} />
+
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative">
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />

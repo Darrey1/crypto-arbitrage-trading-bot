@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { Key, Bell, Shield, User, Palette, Eye, EyeOff, Save, AlertTriangle, Wallet, RefreshCw, LogOut } from 'lucide-react'
+import { Shield, User, Palette, Save, AlertTriangle, Wallet, RefreshCw, LogOut } from 'lucide-react'
 import { toast } from 'sonner'
 import { useBotStore } from '@/store/useBotStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { cn } from '@/lib/utils'
+import type { BotConfig } from '@/api/types'
 
 type SettingsTab = 'wallet' | 'risk' | 'profile' | 'appearance'
 
@@ -59,6 +60,14 @@ function WalletSection() {
 function RiskSection() {
   const { config, updateConfig } = useBotStore()
 
+  if (!config) {
+    return (
+      <div className="glass rounded-2xl p-5 text-xs text-slate-500">
+        Loading risk settings from backend...
+      </div>
+    )
+  }
+
   return (
     <div className="glass rounded-2xl p-5 space-y-5">
       <div className="flex items-center gap-2 mb-2">
@@ -80,7 +89,7 @@ function RiskSection() {
             min={min}
             step={step ?? 1}
             value={config[key as keyof typeof config] as number}
-            onChange={(e) => updateConfig({ [key]: Number(e.target.value) } as Partial<typeof config>)}
+            onChange={(e) => updateConfig({ [key]: Number(e.target.value) } as Partial<BotConfig>)}
             className="input-base text-xs"
           />
         </div>

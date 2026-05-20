@@ -9,13 +9,13 @@ type RetryConfig = InternalAxiosRequestConfig & { _retry?: boolean }
 export const apiClient = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 15_000,
+  timeout: 60_000,
 })
 
 const refreshClient = axios.create({
   baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 15_000,
+  timeout: 60_000,
 })
 
 let refreshPromise: Promise<AuthTokens | null> | null = null
@@ -23,6 +23,7 @@ let refreshPromise: Promise<AuthTokens | null> | null = null
 apiClient.interceptors.request.use((config: RetryConfig) => {
   const token = useAuthStore.getState().accessToken
   if (token) {
+    config.headers = config.headers ?? {}
     config.headers.Authorization = `Bearer ${token}`
   }
   return config

@@ -5,6 +5,7 @@ import { io, Socket } from 'socket.io-client'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useBotStore } from '@/store/useBotStore'
 import type { BotLog, BotState, Opportunity, PortfolioBalance, PortfolioHistoryPoint, PriceData, Trade } from '@/api/types'
+import { pro } from 'ccxt';
 
 export function usePriceEngine() {
   const token = useAuthStore((state) => state.accessToken)
@@ -15,6 +16,7 @@ export function usePriceEngine() {
   const applyRealtimeEvent = useBotStore((state) => state.applyRealtimeEvent)
   const setSocketConnected = useBotStore((state) => state.setSocketConnected)
   const socketRef = useRef<Socket | null>(null)
+  const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
 
   useEffect(() => {
     if (!hydrated || !isAuthenticated || !token) {
@@ -22,9 +24,10 @@ export function usePriceEngine() {
     }
 
     refreshAll().catch(() => undefined)
+    
 
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000'
-    const socket = io(wsUrl, {
+    const socket = io(BASE_URL, {
+      path: '/socket.io',
       transports: ['websocket'],
       auth: { token },
       reconnection: true,
@@ -38,6 +41,7 @@ export function usePriceEngine() {
     socket.on('connect', () => setSocketConnected(true))
     socket.on('disconnect', () => setSocketConnected(false))
     socket.on('connect_error', () => setSocketConnected(false))
+    socket.on('price:tick', (payload: PriceData) => applyRealtimeEvent({ type: 'price:tick', payload }))
     socket.on('prices:update', (payload: PriceData[]) => applyRealtimeEvent({ type: 'prices:update', payload }))
     socket.on('opportunity:new', (payload: Opportunity) => applyRealtimeEvent({ type: 'opportunity:new', payload }))
     socket.on('trade:new', (payload: Trade) => applyRealtimeEvent({ type: 'trade:new', payload }))
@@ -48,11 +52,11 @@ export function usePriceEngine() {
     })
 
     const priceFallback = window.setInterval(() => {
-      refreshPrices().catch(() => undefined)
+      refreshPrices({ silent: true }).catch(() => undefined)
     }, 10_000)
 
     const snapshotFallback = window.setInterval(() => {
-      refreshAll().catch(() => undefined)
+      refreshAll({ silent: true }).catch(() => undefined)
     }, 60_000)
 
     return () => {
