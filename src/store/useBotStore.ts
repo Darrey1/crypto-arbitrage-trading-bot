@@ -84,7 +84,9 @@ interface TradingStore {
 }
 
 function normalizeError(error: unknown) {
-  if (error instanceof Error) return error.message
+  if (error instanceof Error) {
+    return error?.message
+  }
   return 'Unable to load trading data.'
 }
 
@@ -128,7 +130,7 @@ export const useBotStore = create<TradingStore>()((set) => ({
         botState: statusRes.data.data,
         config: configRes.data.data,
         opportunities: opportunitiesRes.data.data,
-        logs: logsRes.data.data.items,
+        logs: logsRes.data.data?.items,
         trades: tradesRes.data.data.items,
         prices: upsertPrices({}, pricesRes.data.data),
         portfolioBalances: balancesRes.data.data,
@@ -179,6 +181,7 @@ export const useBotStore = create<TradingStore>()((set) => ({
       const response = await botApi.start()
       set({ botState: response.data.data, error: null })
     } catch (error) {
+      console.log(error)
       const message = normalizeError(error)
       set({ error: message })
       throw new Error(message)
