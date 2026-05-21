@@ -1,16 +1,7 @@
 'use client'
 
-import { useEffect } from 'react'
-import { hydrateAuthStore } from '@/store/useAuthStore'
-
-// Hydration already ran synchronously at module load time. This component
-// re-runs it on mount as a safety net for dev hot-reload scenarios where the
-// module cache may be stale. It is a no-op in production (authReady is already
-// resolved and setState receives identical values).
+// AuthBootstrap has been superseded by AuthProvider (src/components/AuthProvider.tsx).
+// This file is kept to avoid breaking any leftover import — it is a no-op.
 export function AuthBootstrap() {
-  useEffect(() => {
-    hydrateAuthStore()
-  }, [])
-
   return null
 }

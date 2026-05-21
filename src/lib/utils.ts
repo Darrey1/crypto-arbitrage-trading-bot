@@ -40,6 +40,7 @@ export function formatCurrency(value: number, decimals = 2): string {
 }
 
 export function formatPrice(value: number): string {
+  if (!isFinite(value)) return '--'
   if (value >= 1000) return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   return value.toFixed(4)
 }

@@ -8,8 +8,6 @@ type RetryConfig = InternalAxiosRequestConfig & { _retry?: boolean }
 
 const ACCESS_COOKIE = 'arb-access-token'
 
-// Cookie fallback: covers the narrow window between module load and the first
-// render where the Zustand store may not yet reflect the persisted token.
 function readCookieToken(): string | null {
   if (typeof document === 'undefined') return null
   const entry = document.cookie
@@ -32,13 +30,14 @@ const refreshClient = axios.create({
 
 let refreshPromise: Promise<AuthTokens | null> | null = null
 
-// Request gate: await authReady before every outgoing request.
+// ─── Request gate ─────────────────────────────────────────────────────────────
 //
-// In the normal case (hydration completes before any request fires) authReady
-// is already resolved — the await costs one microtask tick and continues.
-// In the rare edge case where a request fires before hydration completes the
-// interceptor suspends here until hydrateAuthStore() signals readiness, then
-// the token is read and attached. This eliminates every possible race.
+// Every outgoing request awaits authReady before reading the token. In the
+// normal flow authReady is already resolved by the time the first request fires
+// (the await is a free microtask no-op). When a request races ahead of hydration
+// it suspends here until hydrateAuthStore() signals completion — the token is
+// then read from the fully-hydrated store, so the Authorization header is
+// always correct.
 apiClient.interceptors.request.use(async (config: RetryConfig) => {
   await authReady
   const token = useAuthStore.getState().accessToken ?? readCookieToken()
@@ -49,6 +48,7 @@ apiClient.interceptors.request.use(async (config: RetryConfig) => {
   return config
 })
 
+// ─── Token refresh + 401 handling ────────────────────────────────────────────
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
@@ -72,15 +72,13 @@ apiClient.interceptors.response.use(
     try {
       refreshPromise ??= refreshClient
         .post<{ success: boolean; message: string; data: AuthTokens }>('/api/auth/refresh', { refreshToken })
-        .then((response) => response.data.data)
+        .then((res) => res.data.data)
         .finally(() => {
           refreshPromise = null
         })
 
       const tokens = await refreshPromise
-      if (!tokens) {
-        throw new Error('Unable to refresh session')
-      }
+      if (!tokens) throw new Error('Unable to refresh session')
 
       useAuthStore.getState().updateTokens(tokens)
       originalRequest.headers.Authorization = `Bearer ${tokens.accessToken}`

@@ -12,7 +12,7 @@ import { toast } from 'sonner'
 
 export function Header({ title }: { title?: string }) {
   const router = useRouter()
-  const { config, updateConfig, prices, socketConnected, opportunities, trades } = useBotStore()
+  const { config, updateConfig, prices, socketConnected, opportunities, trades, botState } = useBotStore()
   const { theme, toggleTheme } = useThemeStore()
   const [loading, setLoading] = useState(false)
   const [currentMode, setCurrentMode] = useState<'PAPER' | 'LIVE' | null>(null)
@@ -22,6 +22,7 @@ export function Header({ title }: { title?: string }) {
   const selectedPair = config?.tradingPair ?? 'ETH/USDT'
   const executionMode = config?.executionMode ?? 'PAPER'
   const BASE_CURRENCY = selectedPair.split('/')[0]
+  const QUOTE_CURRENCY = selectedPair.split('/')[1]
   const binanceTick = prices[`binance:${selectedPair}`]
 
   function handleModeSwitch(mode: 'PAPER' | 'LIVE') {
@@ -89,6 +90,20 @@ export function Header({ title }: { title?: string }) {
           <span style={{ color: 'var(--text-3)' }}>{socketConnected ? 'Live' : 'Reconnecting'}</span>
         </div>
 
+        {executionMode === 'PAPER' && (
+         <div
+          className={cn(
+            'hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg glass-subtle text-xs font-mono transition-colors duration-300',
+          )}
+          style={{ color: 'var(--text-1)' }}
+        >
+          <span style={{ color: 'var(--text-3)' }}>Virtual Bal.</span>
+          <span className="font-semibold">
+            ${binanceTick ? formatPrice(botState?.virtualBalance as number) : '--'}
+          </span>
+        </div>
+        )}
+
         {/* ETH Price Pill */}
         <div
           className={cn(
@@ -97,7 +112,7 @@ export function Header({ title }: { title?: string }) {
           style={{ color: 'var(--text-1)' }}
         >
           <div className="live-dot" />
-          <span style={{ color: 'var(--text-3)' }}>{BASE_CURRENCY}</span>
+          <span style={{ color: 'var(--text-3)' }}>{BASE_CURRENCY}{QUOTE_CURRENCY}</span>
           <span className="font-semibold">
             ${binanceTick ? formatPrice(binanceTick.lastPrice) : '--'}
           </span>

@@ -275,7 +275,7 @@ export default function BotPage() {
                   <label className="text-xs font-medium text-slate-400">Min Spread Threshold</label>
                   <span className="text-xs font-mono text-[var(--accent)]">{displayConfig.minSpreadThreshold}%</span>
                 </div>
-                <input type="range" min={0.1} max={2} step={0.05} value={displayConfig.minSpreadThreshold} onChange={(e) => queueConfigSave({ minSpreadThreshold: Number(e.target.value) })} className="w-full h-1.5 rounded-full appearance-none cursor-pointer" disabled={loading || activeAction === 'pair' || activeAction === 'mode'} style={{ background: `linear-gradient(to right, #ECBD74 ${Math.round((displayConfig.minSpreadThreshold / 2) * 100)}%, rgba(255,255,255,0.1) 0%)` }} />
+                <input type="range" min={0.0001} max={2} step={0.05} value={displayConfig.minSpreadThreshold} onChange={(e) => queueConfigSave({ minSpreadThreshold: Number(e.target.value) })} className="w-full h-1.5 rounded-full appearance-none cursor-pointer" disabled={loading || activeAction === 'pair' || activeAction === 'mode'} style={{ background: `linear-gradient(to right, #ECBD74 ${Math.round((displayConfig.minSpreadThreshold / 2) * 100)}%, rgba(255,255,255,0.1) 0%)` }} />
               </div>
 
               <div>
@@ -293,7 +293,7 @@ export default function BotPage() {
                   <label className="text-xs font-medium text-slate-400">Slippage Tolerance</label>
                   <span className="text-xs font-mono text-[var(--accent)]">{displayConfig.slippageTolerance}%</span>
                 </div>
-                <input type="range" min={0.05} max={1} step={0.05} value={displayConfig.slippageTolerance} onChange={(e) => queueConfigSave({ slippageTolerance: Number(e.target.value) })} className="w-full h-1.5 rounded-full appearance-none cursor-pointer" disabled={loading || activeAction === 'pair' || activeAction === 'mode'} style={{ background: `linear-gradient(to right, #ECBD74 ${Math.round((displayConfig.slippageTolerance / 1) * 100)}%, rgba(255,255,255,0.1) 0%)` }} />
+                <input type="range" min={0.005} max={1} step={0.05} value={displayConfig.slippageTolerance} onChange={(e) => queueConfigSave({ slippageTolerance: Number(e.target.value) })} className="w-full h-1.5 rounded-full appearance-none cursor-pointer" disabled={loading || activeAction === 'pair' || activeAction === 'mode'} style={{ background: `linear-gradient(to right, #ECBD74 ${Math.round((displayConfig.slippageTolerance / 1) * 100)}%, rgba(255,255,255,0.1) 0%)` }} />
               </div>
 
               <div>

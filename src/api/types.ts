@@ -122,6 +122,7 @@ export type BotState = {
   totalTrades: number
   todayPnl: number
   winRate: number
+  virtualBalance?: number | string | null
   lastStartedAt: string | null
   lastStoppedAt: string | null
 }

@@ -84,11 +84,11 @@ export const useAuthStore = create<AuthStore>()(
 
 // ─── Auth-ready gate ──────────────────────────────────────────────────────────
 //
-// On the server there is nothing to hydrate, so the gate resolves immediately.
-// In the browser the gate is a pending Promise that hydrateAuthStore() resolves
-// exactly once. Any Axios request that fires before hydration is complete will
-// await this promise — pausing until the token is available — then continue.
-// After the first resolution every subsequent await is a free no-op.
+// authReady is a Promise that resolves once after hydrateAuthStore() finishes
+// reading from storage and setting state. The Axios interceptor awaits it before
+// every request. On the server it resolves immediately (no storage to read).
+// Calling hydrateAuthStore() more than once is safe — the second call is a no-op
+// because _resolveAuthReady is nulled after the first resolution.
 
 let _resolveAuthReady: (() => void) | null = null
 
@@ -100,20 +100,37 @@ export const authReady: Promise<void> =
       })
 
 // ─── Hydration ────────────────────────────────────────────────────────────────
+//
+// MUST be async: Zustand v5 persist.rehydrate() returns a thenable. Even though
+// the underlying localStorage.getItem() is synchronous, the thenable schedules
+// its .then() callbacks as microtasks before returning. Reading getState()
+// synchronously after rehydrate() would see the OLD (empty) state. Awaiting it
+// ensures the .then() chain inside Zustand has flushed and set() has been called
+// with the persisted values before we continue.
 
-export function hydrateAuthStore(): void {
+export async function hydrateAuthStore(): Promise<void> {
   if (typeof window === 'undefined') return
 
-  try {
-    // localStorage.getItem is synchronous — this completes immediately.
-    useAuthStore.persist.rehydrate()
-  } catch {
-    // localStorage unavailable (Safari private mode, storage quota exceeded).
+  // Guard: if already hydrated (e.g. called twice), skip storage I/O.
+  if (useAuthStore.getState().hydrated) {
+    _resolveAuthReady?.()
+    _resolveAuthReady = null
+    return
   }
 
+  try {
+    // await is required — Zustand v5 rehydrate() resolves asynchronously.
+    await useAuthStore.persist.rehydrate()
+  } catch {
+    // localStorage unavailable in Safari private mode or when quota is exceeded.
+  }
+
+  // At this point Zustand has merged stored values into the store via set().
+  // Merge the session cookie as a fallback in case localStorage was cleared
+  // but the cookie is still alive (e.g. the user cleared site data partially).
   const cookieToken = readSessionCookie()
-  const current = useAuthStore.getState()
-  const accessToken = current.accessToken ?? cookieToken ?? null
+  const { accessToken: storedToken } = useAuthStore.getState()
+  const accessToken = storedToken ?? cookieToken ?? null
 
   useAuthStore.setState({
     hydrated: true,
@@ -121,18 +138,21 @@ export function hydrateAuthStore(): void {
     isAuthenticated: Boolean(accessToken),
   })
 
-  // Sync the cookie if the token came from localStorage and the cookie was stale.
-  if (accessToken && accessToken !== current.accessToken) {
+  // Keep the cookie in sync with the token source of truth.
+  if (accessToken && accessToken !== storedToken) {
     setSessionCookie(accessToken)
   }
 
-  // Signal all waiting requests that auth is ready.
+  // Unblock all Axios requests that were awaiting this.
   _resolveAuthReady?.()
   _resolveAuthReady = null
 }
 
-// Run synchronously at module-load time so the gate is open before any
-// component mounts or any Axios interceptor fires.
+// ─── Module-level kickoff ─────────────────────────────────────────────────────
+//
+// Fire-and-forget at module evaluation time so hydration starts as early as
+// possible. authReady will not resolve until hydrateAuthStore() finishes, so any
+// Axios request that fires in the meantime is held by the interceptor gate.
 if (typeof window !== 'undefined') {
-  hydrateAuthStore()
+  void hydrateAuthStore()
 }
