@@ -4,15 +4,12 @@ import type { AuthTokens, AuthUser } from '@/api/types'
 
 const ACCESS_COOKIE = 'arb-access-token'
 
-function readSessionCookie() {
+function readSessionCookie(): string | null {
   if (typeof document === 'undefined') return null
-
   const cookie = document.cookie
     .split('; ')
     .find((entry) => entry.startsWith(`${ACCESS_COOKIE}=`))
-
   if (!cookie) return null
-
   return decodeURIComponent(cookie.slice(ACCESS_COOKIE.length + 1))
 }
 
@@ -22,8 +19,7 @@ function setSessionCookie(token: string | null) {
     document.cookie = `${ACCESS_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`
     return
   }
-
-  const secure = typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; Secure' : ''
+  const secure = window.location.protocol === 'https:' ? '; Secure' : ''
   document.cookie = `${ACCESS_COOKIE}=${encodeURIComponent(token)}; Path=/; Max-Age=${60 * 60 * 24}; SameSite=Lax${secure}`
 }
 
@@ -37,7 +33,6 @@ export interface AuthStore {
   updateTokens: (tokens: AuthTokens) => void
   setUser: (user: AuthUser | null) => void
   logout: () => void
-  setHydrated: (hydrated: boolean) => void
   loginDemo: () => void
 }
 
@@ -51,27 +46,17 @@ export const useAuthStore = create<AuthStore>()(
       isAuthenticated: false,
       setSession: ({ user, tokens }) => {
         setSessionCookie(tokens.accessToken)
-        set({
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-          user,
-          isAuthenticated: true,
-        })
+        set({ accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, user, isAuthenticated: true })
       },
       updateTokens: (tokens) => {
         setSessionCookie(tokens.accessToken)
-        set({
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-          isAuthenticated: true,
-        })
+        set({ accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, isAuthenticated: true })
       },
       setUser: (user) => set({ user, isAuthenticated: Boolean(user && get().accessToken) }),
       logout: () => {
         setSessionCookie(null)
         set({ accessToken: null, refreshToken: null, user: null, isAuthenticated: false })
       },
-      setHydrated: (hydrated) => set({ hydrated }),
       loginDemo: () => {
         const demoUser: AuthUser = {
           id: 'demo',
@@ -97,20 +82,57 @@ export const useAuthStore = create<AuthStore>()(
   )
 )
 
-export async function hydrateAuthStore() {
-  await Promise.resolve(useAuthStore.persist.rehydrate())
+// ─── Auth-ready gate ──────────────────────────────────────────────────────────
+//
+// On the server there is nothing to hydrate, so the gate resolves immediately.
+// In the browser the gate is a pending Promise that hydrateAuthStore() resolves
+// exactly once. Any Axios request that fires before hydration is complete will
+// await this promise — pausing until the token is available — then continue.
+// After the first resolution every subsequent await is a free no-op.
+
+let _resolveAuthReady: (() => void) | null = null
+
+export const authReady: Promise<void> =
+  typeof window === 'undefined'
+    ? Promise.resolve()
+    : new Promise<void>((resolve) => {
+        _resolveAuthReady = resolve
+      })
+
+// ─── Hydration ────────────────────────────────────────────────────────────────
+
+export function hydrateAuthStore(): void {
+  if (typeof window === 'undefined') return
+
+  try {
+    // localStorage.getItem is synchronous — this completes immediately.
+    useAuthStore.persist.rehydrate()
+  } catch {
+    // localStorage unavailable (Safari private mode, storage quota exceeded).
+  }
 
   const cookieToken = readSessionCookie()
-  const currentState = useAuthStore.getState()
-  const accessToken = currentState.accessToken ?? cookieToken
+  const current = useAuthStore.getState()
+  const accessToken = current.accessToken ?? cookieToken ?? null
 
   useAuthStore.setState({
     hydrated: true,
-    accessToken: accessToken ?? null,
+    accessToken,
     isAuthenticated: Boolean(accessToken),
   })
 
-  if (accessToken && accessToken !== currentState.accessToken) {
+  // Sync the cookie if the token came from localStorage and the cookie was stale.
+  if (accessToken && accessToken !== current.accessToken) {
     setSessionCookie(accessToken)
   }
+
+  // Signal all waiting requests that auth is ready.
+  _resolveAuthReady?.()
+  _resolveAuthReady = null
+}
+
+// Run synchronously at module-load time so the gate is open before any
+// component mounts or any Axios interceptor fires.
+if (typeof window !== 'undefined') {
+  hydrateAuthStore()
 }

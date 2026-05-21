@@ -1,10 +1,22 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
-import { useAuthStore } from '@/store/useAuthStore'
+import { authReady, useAuthStore } from '@/store/useAuthStore'
 import type { AuthTokens } from './types'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
 
 type RetryConfig = InternalAxiosRequestConfig & { _retry?: boolean }
+
+const ACCESS_COOKIE = 'arb-access-token'
+
+// Cookie fallback: covers the narrow window between module load and the first
+// render where the Zustand store may not yet reflect the persisted token.
+function readCookieToken(): string | null {
+  if (typeof document === 'undefined') return null
+  const entry = document.cookie
+    .split('; ')
+    .find((c) => c.startsWith(`${ACCESS_COOKIE}=`))
+  return entry ? decodeURIComponent(entry.slice(ACCESS_COOKIE.length + 1)) : null
+}
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -20,8 +32,16 @@ const refreshClient = axios.create({
 
 let refreshPromise: Promise<AuthTokens | null> | null = null
 
-apiClient.interceptors.request.use((config: RetryConfig) => {
-  const token = useAuthStore.getState().accessToken
+// Request gate: await authReady before every outgoing request.
+//
+// In the normal case (hydration completes before any request fires) authReady
+// is already resolved — the await costs one microtask tick and continues.
+// In the rare edge case where a request fires before hydration completes the
+// interceptor suspends here until hydrateAuthStore() signals readiness, then
+// the token is read and attached. This eliminates every possible race.
+apiClient.interceptors.request.use(async (config: RetryConfig) => {
+  await authReady
+  const token = useAuthStore.getState().accessToken ?? readCookieToken()
   if (token) {
     config.headers = config.headers ?? {}
     config.headers.Authorization = `Bearer ${token}`
@@ -70,8 +90,6 @@ apiClient.interceptors.response.use(
       if (typeof window !== 'undefined') {
         window.location.href = '/auth/login'
       }
-      // Reject with the original 401 error so callers see the backend message,
-      // not an error from the refresh endpoint
       return Promise.reject(error)
     }
   }

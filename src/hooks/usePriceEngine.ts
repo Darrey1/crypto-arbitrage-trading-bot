@@ -5,7 +5,6 @@ import { io, Socket } from 'socket.io-client'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useBotStore } from '@/store/useBotStore'
 import type { BotLog, BotState, Opportunity, PortfolioBalance, PortfolioHistoryPoint, PriceData, Trade } from '@/api/types'
-import { pro } from 'ccxt';
 
 export function usePriceEngine() {
   const token = useAuthStore((state) => state.accessToken)

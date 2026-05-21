@@ -1,7 +1,18 @@
 'use client'
 
-import { useMemo } from 'react'
-import { Activity, DollarSign, Target, Bot, Wallet, AlertTriangle, X } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import {
+  Activity,
+  DollarSign,
+  Target,
+  Bot,
+  Wallet,
+  Play,
+  Square,
+  Pause,
+  ArrowRight,
+  Loader2,
+} from 'lucide-react'
 import {
   Area,
   AreaChart,
@@ -9,18 +20,15 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  CartesianGrid,
 } from 'recharts'
 import { useBotStore } from '@/store/useBotStore'
 import { cn, EXCHANGES, formatCurrency, formatPercent, formatPrice } from '@/lib/utils'
 import { priceKey } from '@/store/useBotStore'
 import {
-  EXCHANGE_ORDER,
   EXCHANGE_COLORS,
-  usePairChart,
-  type ChartPoint,
   type ExchangeKey,
 } from '@/hooks/usePairChart'
+import type { BotStatus, OpportunityStatus } from '@/api/types'
 
 // ─── stat card ───────────────────────────────────────────────────────────────
 
@@ -51,96 +59,161 @@ function StatCard({
   )
 }
 
-// ─── empty / error helpers ───────────────────────────────────────────────────
+// ─── empty card ───────────────────────────────────────────────────────────────
 
 function EmptyCard({ title, description }: { title: string; description: string }) {
   return (
-    <div className="glass rounded-2xl p-6 text-center">
-      <div className="text-sm font-semibold text-slate-200">{title}</div>
-      <div className="text-xs text-slate-500 mt-1">{description}</div>
+    <div className="rounded-xl border border-[rgba(255,255,255,0.05)] bg-[rgba(255,255,255,0.02)] p-6 text-center">
+      <div className="text-sm font-semibold text-slate-400">{title}</div>
+      <div className="text-xs text-slate-600 mt-1">{description}</div>
     </div>
   )
 }
 
-function ApiErrorBanner({ message, onDismiss }: { message: string; onDismiss: () => void }) {
+// ─── bot status badge ─────────────────────────────────────────────────────────
+
+const STATUS_CONFIG: Record<
+  BotStatus,
+  { dot: string; label: string; text: string; border: string; bg: string }
+> = {
+  RUNNING: {
+    dot: 'bg-emerald-400 animate-pulse',
+    label: 'Running',
+    text: 'text-emerald-400',
+    border: 'border-emerald-500/25',
+    bg: 'bg-emerald-500/10',
+  },
+  PAUSED: {
+    dot: 'bg-amber-400',
+    label: 'Paused',
+    text: 'text-amber-400',
+    border: 'border-amber-500/25',
+    bg: 'bg-amber-500/10',
+  },
+  IDLE: {
+    dot: 'bg-slate-500',
+    label: 'Idle',
+    text: 'text-slate-400',
+    border: 'border-slate-700',
+    bg: 'bg-slate-800/40',
+  },
+  STOPPED: {
+    dot: 'bg-slate-500',
+    label: 'Stopped',
+    text: 'text-slate-400',
+    border: 'border-slate-700',
+    bg: 'bg-slate-800/40',
+  },
+  ERROR: {
+    dot: 'bg-red-400 animate-pulse',
+    label: 'Error',
+    text: 'text-red-400',
+    border: 'border-red-500/25',
+    bg: 'bg-red-500/10',
+  },
+}
+
+function BotStatusBadge({ status }: { status: BotStatus }) {
+  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.IDLE
   return (
-    <div className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-red-500/20 bg-red-500/8 px-4 py-3">
-      <div className="flex items-start gap-2.5">
-        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
-        <div>
-          <p className="text-xs font-medium text-red-400">History fetch failed</p>
-          <p className="mt-0.5 text-xs text-red-400/70">{message}</p>
-        </div>
-      </div>
-      <button
-        onClick={onDismiss}
-        className="mt-0.5 shrink-0 text-red-400/50 transition-colors hover:text-red-400"
-        aria-label="Dismiss"
-      >
-        <X className="h-3.5 w-3.5" />
-      </button>
-    </div>
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold',
+        cfg.text,
+        cfg.border,
+        cfg.bg,
+      )}
+    >
+      <span className={cn('h-1.5 w-1.5 rounded-full', cfg.dot)} />
+      {cfg.label}
+    </span>
   )
 }
 
-// ─── chart tooltip ───────────────────────────────────────────────────────────
+// ─── opportunity status pill ──────────────────────────────────────────────────
 
-function ChartTooltip({
-  active,
-  payload,
+const OPP_STATUS_STYLE: Record<OpportunityStatus, string> = {
+  NEW: 'bg-violet-500/15 text-violet-400 border-violet-500/20',
+  EXECUTED: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20',
+  EXPIRED: 'bg-slate-700/40 text-slate-500 border-slate-700',
+  REJECTED: 'bg-red-500/15 text-red-400 border-red-500/20',
+}
+
+function OppStatusPill({ status }: { status: OpportunityStatus }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium',
+        OPP_STATUS_STYLE[status] ?? OPP_STATUS_STYLE.NEW,
+      )}
+    >
+      {status.charAt(0) + status.slice(1).toLowerCase()}
+    </span>
+  )
+}
+
+// ─── opportunity card ─────────────────────────────────────────────────────────
+
+function exchangeLabel(ex: string) {
+  const info = EXCHANGES[ex.toLowerCase() as keyof typeof EXCHANGES]
+  return info?.name ?? (ex.charAt(0) + ex.slice(1).toLowerCase())
+}
+
+function OpportunityCard({
+  opp,
 }: {
-  active?: boolean
-  payload?: Array<{ payload: ChartPoint }>
+  opp: {
+    id: string
+    pair: string
+    buyExchange: string
+    sellExchange: string
+    netSpread: number
+    estProfit: number
+    status: OpportunityStatus
+    createdAt: string
+  }
 }) {
-  if (!active || !payload?.length) return null
-  const point = payload[0]?.payload
-  if (!point) return null
-
   return (
-    <div className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#0B1017] px-4 py-3 shadow-[0_18px_48px_rgba(0,0,0,0.4)]">
-      <div className="text-[11px] uppercase tracking-[0.2em] text-slate-500">{point.time}</div>
-      <div className="mt-3 space-y-2">
-        {EXCHANGE_ORDER.map((exchange) => (
-          <div key={exchange} className="flex items-center justify-between gap-5 text-xs">
-            <div className="flex items-center gap-2 text-slate-300">
-              <span className="h-2 w-2 rounded-full" style={{ background: EXCHANGE_COLORS[exchange] }} />
-              <span>{exchange}</span>
-            </div>
-            <span className="font-mono text-slate-100">
-              {typeof point[exchange] === 'number'
-                ? `$${formatPrice(point[exchange] as number)}`
-                : '—'}
+    <div className="rounded-xl border border-[rgba(255,255,255,0.06)] bg-[rgba(255,255,255,0.02)] p-3.5 transition-colors hover:bg-[rgba(255,255,255,0.04)]">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-xs font-semibold text-slate-200">{opp.pair}</div>
+          <div className="mt-1 flex items-center gap-1.5 text-[11px]">
+            <span
+              className="font-medium"
+              style={{ color: EXCHANGE_COLORS[opp.buyExchange.toUpperCase() as ExchangeKey] ?? '#94a3b8' }}
+            >
+              {exchangeLabel(opp.buyExchange)}
+            </span>
+            <ArrowRight className="h-3 w-3 shrink-0 text-slate-600" />
+            <span
+              className="font-medium"
+              style={{ color: EXCHANGE_COLORS[opp.sellExchange.toUpperCase() as ExchangeKey] ?? '#94a3b8' }}
+            >
+              {exchangeLabel(opp.sellExchange)}
             </span>
           </div>
-        ))}
+          <div className="mt-1.5 text-[11px] text-slate-500">
+            Est.{' '}
+            <span className="font-mono font-semibold text-emerald-400">
+              +{formatCurrency(opp.estProfit)}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <div className="font-mono text-sm font-bold text-emerald-400">
+            +{opp.netSpread.toFixed(3)}%
+          </div>
+          <div className="text-[10px] text-slate-600">net spread</div>
+          <OppStatusPill status={opp.status} />
+        </div>
       </div>
     </div>
   )
 }
 
-// ─── axis tick ───────────────────────────────────────────────────────────────
-
-function AxisTick(props: {
-  x?: number
-  y?: number
-  payload?: { value?: string }
-  index?: number
-  visibleTicksCount?: number
-}) {
-  const { x, y, payload, index = 0, visibleTicksCount = 1 } = props
-  const step = Math.max(1, Math.ceil(visibleTicksCount / 6))
-  const show = index % step === 0 || index === visibleTicksCount - 1
-  if (!show || x === undefined || y === undefined || !payload?.value) return null
-  return (
-    <g transform={`translate(${x},${y})`}>
-      <text fill="#64748B" fontSize={10} textAnchor="middle" dy={14}>
-        {payload.value}
-      </text>
-    </g>
-  )
-}
-
-// ─── page ────────────────────────────────────────────────────────────────────
+// ─── page ─────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
   const {
@@ -152,31 +225,46 @@ export default function DashboardPage() {
     portfolioBalances,
     portfolioHistory,
     tradeStats,
-    loading,
     error,
     socketConnected,
+    startBot,
+    stopBot,
+    pauseBot,
   } = useBotStore()
+
+  const [botActionLoading, setBotActionLoading] = useState(false)
+  const [botActionError, setBotActionError] = useState<string | null>(null)
+
+  const status = botState?.status ?? 'IDLE'
+  const isRunning = status === 'RUNNING'
+  const isPaused = status === 'PAUSED'
+  const canStart = status === 'IDLE' || status === 'STOPPED' || status === 'ERROR' || isPaused
+  const canPause = isRunning
+  const canStop = isRunning || isPaused
+
+  async function handleBotAction(action: () => Promise<void>, label: string) {
+    setBotActionLoading(true)
+    setBotActionError(null)
+    try {
+      await action()
+    } catch (e) {
+      const msg =
+        e && typeof e === 'object' && 'message' in e
+          ? String((e as { message: unknown }).message)
+          : `Failed to ${label} bot`
+      setBotActionError(msg)
+    } finally {
+      setBotActionLoading(false)
+    }
+  }
 
   const selectedPair = config?.tradingPair || opportunities[0]?.pair || ''
 
-  // All current prices for the selected pair (for the Live Prices sidebar card)
   const comparisonRows = useMemo(
     () => Object.values(prices).filter((tick) => tick.pair === selectedPair),
     [prices, selectedPair],
   )
 
-  // ── chart data via shared hook (history + live stream) ──────────────────────
-  const {
-    chartData,
-    loading: chartLoading,
-    hasLoaded: chartHasLoaded,
-    apiError: chartError,
-    livePrices,
-    dismissError: dismissChartError,
-  } = usePairChart(selectedPair)
-
-  // ── rest of page data ───────────────────────────────────────────────────────
-  const latestOpportunity = opportunities[0]
   const recentTrades = trades.slice(0, 5)
   const totalPortfolioValue = portfolioBalances.reduce((sum, b) => sum + b.totalValue, 0)
   const portfolioHistoryData = portfolioHistory.slice(-14).map((point) => ({
@@ -233,209 +321,153 @@ export default function DashboardPage() {
       <div className="grid xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2 space-y-4">
 
-          {/* ── Live Price Comparison Chart ── */}
+          {/* ── Bot Control + Live Opportunities ── */}
           <div className="glass rounded-2xl p-5">
-            {chartError && (
-              <ApiErrorBanner message={chartError} onDismiss={dismissChartError} />
-            )}
-
-            <div className="flex items-start justify-between mb-4 flex-wrap gap-3">
+            {/* header */}
+            <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
               <div>
-                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-slate-500">
-                  <span
-                    className={cn(
-                      'h-2 w-2 rounded-full',
-                      socketConnected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600',
-                    )}
-                  />
-                  {socketConnected ? 'Live stream' : 'Reconnecting'}
-                </div>
-                <h3 className="mt-1.5 text-sm font-semibold text-slate-200">
-                  {selectedPair || 'Loading pair…'} — Price Comparison
-                </h3>
-                <p className="text-xs text-slate-500 mt-0.5">History + live ticks · all 3 exchanges</p>
+                <h3 className="text-sm font-semibold text-slate-200">Live Opportunities</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {isRunning
+                    ? `Scanning${selectedPair ? ` · ${selectedPair}` : ''}…`
+                    : isPaused
+                    ? 'Paused — resume to continue scanning'
+                    : 'Start the bot to begin scanning for spreads'}
+                </p>
               </div>
 
-              {/* per-exchange live price badges */}
-              <div className="flex flex-wrap items-center gap-3">
-                {EXCHANGE_ORDER.map((ex) => {
-                  const price = livePrices[ex as ExchangeKey]
-                  return typeof price === 'number' ? (
-                    <div key={ex} className="flex items-center gap-1.5">
-                      <span
-                        className="w-2 h-2 rounded-full"
-                        style={{ background: EXCHANGE_COLORS[ex] }}
-                      />
-                      <span className="text-xs text-slate-400">
-                        {ex.charAt(0) + ex.slice(1).toLowerCase()}
-                      </span>
-                      <span className="text-xs font-mono font-semibold text-slate-200">
-                        ${formatPrice(price)}
-                      </span>
-                    </div>
-                  ) : null
-                })}
+              <div className="flex items-center gap-2">
+                <BotStatusBadge status={status} />
+
+                {canStart && (
+                  <button
+                    onClick={() => handleBotAction(startBot, 'start')}
+                    disabled={botActionLoading}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/15 px-3 py-1.5 text-[11px] font-semibold text-emerald-400 transition-colors',
+                      'hover:bg-emerald-500/25 disabled:cursor-not-allowed disabled:opacity-50',
+                    )}
+                  >
+                    {botActionLoading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Play className="h-3.5 w-3.5 fill-emerald-400" />
+                    )}
+                    Start
+                  </button>
+                )}
+
+                {canPause && (
+                  <button
+                    onClick={() => handleBotAction(pauseBot, 'pause')}
+                    disabled={botActionLoading}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-[11px] font-semibold text-amber-400 transition-colors',
+                      'hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50',
+                    )}
+                  >
+                    {botActionLoading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Pause className="h-3.5 w-3.5 fill-amber-400" />
+                    )}
+                    Pause
+                  </button>
+                )}
+
+                {canStop && (
+                  <button
+                    onClick={() => handleBotAction(stopBot, 'stop')}
+                    disabled={botActionLoading}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-[11px] font-semibold text-red-400 transition-colors',
+                      'hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50',
+                    )}
+                  >
+                    {botActionLoading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Square className="h-3.5 w-3.5 fill-red-400" />
+                    )}
+                    Stop
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* chart body */}
-            {chartLoading && chartData.length === 0 ? (
-              <div className="h-[240px] rounded-xl border border-[rgba(255,255,255,0.05)] bg-[#0A0E14] flex items-center justify-center">
-                <div className="space-y-2 w-2/3">
-                  {[...Array(4)].map((_, i) => (
-                    <div key={i} className="h-3 rounded bg-white/5 animate-pulse" style={{ width: `${[100, 75, 85, 60][i]}%` }} />
-                  ))}
-                </div>
+            {/* bot action error */}
+            {botActionError && (
+              <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-red-500/20 bg-red-500/8 px-3 py-2.5 text-xs text-red-400">
+                <span>{botActionError}</span>
+                <button
+                  onClick={() => setBotActionError(null)}
+                  className="shrink-0 text-red-400/50 hover:text-red-400"
+                >
+                  ✕
+                </button>
               </div>
-            ) : chartHasLoaded && chartData.length === 0 ? (
-              <div className="h-[240px] rounded-xl border border-[rgba(255,255,255,0.05)] bg-[#0A0E14] flex items-center justify-center text-center">
-                <div>
-                  <p className="text-sm font-medium text-slate-400">
-                    {loading ? 'Loading market data…' : 'No price data yet'}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-600">
-                    The chart will populate once the backend starts streaming ticks.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={240}>
-                <AreaChart data={chartData} margin={{ top: 8, right: 8, bottom: 4, left: 0 }}>
-                  <defs>
-                    {EXCHANGE_ORDER.map((ex) => (
-                      <linearGradient key={ex} id={`dash-grad-${ex}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={EXCHANGE_COLORS[ex]} stopOpacity={0.18} />
-                        <stop offset="95%" stopColor={EXCHANGE_COLORS[ex]} stopOpacity={0} />
-                      </linearGradient>
-                    ))}
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-                  <XAxis
-                    dataKey="time"
-                    tick={<AxisTick />}
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={10}
-                    minTickGap={20}
-                  />
-                  <YAxis
-                    tick={{ fill: '#64748B', fontSize: 10 }}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(v) => `$${Number(v).toLocaleString()}`}
-                    domain={['auto', 'auto']}
-                    width={72}
-                  />
-                  <Tooltip
-                    content={<ChartTooltip />}
-                    cursor={{ stroke: 'rgba(255,255,255,0.10)', strokeWidth: 1 }}
-                  />
-                  {EXCHANGE_ORDER.map((ex) => (
-                    <Area
-                      key={ex}
-                      type="monotone"
-                      dataKey={ex}
-                      stroke={EXCHANGE_COLORS[ex]}
-                      strokeWidth={2}
-                      fill={`url(#dash-grad-${ex})`}
-                      dot={false}
-                      connectNulls
-                      isAnimationActive={false}
-                      activeDot={{ r: 3, strokeWidth: 0, fill: EXCHANGE_COLORS[ex] }}
-                    />
-                  ))}
-                </AreaChart>
-              </ResponsiveContainer>
             )}
+
+            {/* opportunities feed */}
+            <div className="space-y-2 max-h-[340px] overflow-y-auto pr-0.5">
+              {opportunities.length === 0 ? (
+                <div className="flex h-[200px] flex-col items-center justify-center rounded-xl border border-[rgba(255,255,255,0.05)] bg-[rgba(255,255,255,0.01)] text-center">
+                  <Activity className="mb-2 h-8 w-8 text-slate-700" />
+                  <p className="text-sm font-medium text-slate-500">No opportunities yet</p>
+                  <p className="mt-1 text-xs text-slate-700">
+                    {isRunning
+                      ? 'The bot is scanning — spreads will appear here in real time.'
+                      : 'Start the bot to begin scanning for arbitrage opportunities.'}
+                  </p>
+                </div>
+              ) : (
+                opportunities.map((opp) => <OpportunityCard key={opp.id} opp={opp} />)
+              )}
+            </div>
           </div>
 
-          {/* ── opportunities + trades ── */}
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="glass rounded-2xl p-5">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-200">Recent Opportunities</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Newest first</p>
-                </div>
-                {latestOpportunity && (
-                  <span className="badge-purple text-[10px] px-2 py-0.5 rounded-full">
-                    {latestOpportunity.status}
-                  </span>
-                )}
+          {/* ── recent trades ── */}
+          <div className="glass rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-sm font-semibold text-slate-200">Recent Trades</h3>
+                <p className="text-xs text-slate-500 mt-0.5">Latest executions</p>
               </div>
-              <div className="space-y-3 max-h-[320px] overflow-y-auto pr-1">
-                {opportunities.length === 0 ? (
-                  <EmptyCard
-                    title="No opportunities"
-                    description="Arbitrage alerts will appear here when the bot detects a spread."
-                  />
-                ) : (
-                  opportunities.slice(0, 5).map((opp) => (
-                    <div key={opp.id} className="glass-subtle rounded-xl p-3">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <div>
-                          <div className="text-xs font-semibold text-slate-200">{opp.pair}</div>
-                          <div className="text-[11px] text-slate-500">
-                            {opp.buyExchange} → {opp.sellExchange}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-mono font-semibold text-emerald-400">
-                            +{opp.netSpread.toFixed(3)}%
-                          </div>
-                          <div className="text-[10px] text-slate-500">
-                            {formatCurrency(opp.estProfit)}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
+              <div className="text-xs text-slate-500">
+                {tradeStats?.totalTrades ?? trades.length} total
               </div>
             </div>
-
-            <div className="glass rounded-2xl p-5">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-200">Recent Trades</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Latest executions</p>
-                </div>
-                <div className="text-xs text-slate-500">
-                  {tradeStats?.totalTrades ?? trades.length} total
-                </div>
-              </div>
-              <div className="space-y-3 max-h-[320px] overflow-y-auto pr-1">
-                {recentTrades.length === 0 ? (
-                  <EmptyCard
-                    title="No trades yet"
-                    description="Trades will be listed here after bot execution."
-                  />
-                ) : (
-                  recentTrades.map((trade) => (
-                    <div key={trade.id} className="glass-subtle rounded-xl p-3">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <div>
-                          <div className="text-xs font-semibold text-slate-200">{trade.pair}</div>
-                          <div className="text-[11px] text-slate-500">{trade.route}</div>
-                        </div>
-                        <div
-                          className={cn(
-                            'text-sm font-mono font-semibold',
-                            trade.netProfit >= 0 ? 'text-emerald-400' : 'text-red-400',
-                          )}
-                        >
-                          {trade.netProfit >= 0 ? '+' : ''}
-                          {formatCurrency(trade.netProfit)}
-                        </div>
+            <div className="space-y-3 max-h-[280px] overflow-y-auto pr-1">
+              {recentTrades.length === 0 ? (
+                <EmptyCard
+                  title="No trades yet"
+                  description="Trades will be listed here after bot execution."
+                />
+              ) : (
+                recentTrades.map((trade) => (
+                  <div key={trade.id} className="glass-subtle rounded-xl p-3">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div>
+                        <div className="text-xs font-semibold text-slate-200">{trade.pair}</div>
+                        <div className="text-[11px] text-slate-500">{trade.route}</div>
                       </div>
-                      <div className="flex items-center justify-between text-[11px] text-slate-500">
-                        <span>{trade.mode}</span>
-                        <span>{trade.status}</span>
+                      <div
+                        className={cn(
+                          'text-sm font-mono font-semibold',
+                          trade.netProfit >= 0 ? 'text-emerald-400' : 'text-red-400',
+                        )}
+                      >
+                        {trade.netProfit >= 0 ? '+' : ''}
+                        {formatCurrency(trade.netProfit)}
                       </div>
                     </div>
-                  ))
-                )}
-              </div>
+                    <div className="flex items-center justify-between text-[11px] text-slate-500">
+                      <span>{trade.mode}</span>
+                      <span>{trade.status}</span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -474,11 +506,15 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-2">
                       <div
                         className="w-2 h-2 rounded-full"
-                        style={{ background: EXCHANGE_COLORS[tick.exchange.toUpperCase() as ExchangeKey] }}
+                        style={{
+                          background:
+                            EXCHANGE_COLORS[tick.exchange.toUpperCase() as ExchangeKey] ?? '#64748b',
+                        }}
                       />
                       <div>
                         <div className="text-slate-300">
-                          {EXCHANGES[tick.exchange.toLowerCase() as keyof typeof EXCHANGES]?.name ?? tick.exchange}
+                          {EXCHANGES[tick.exchange.toLowerCase() as keyof typeof EXCHANGES]?.name ??
+                            tick.exchange}
                         </div>
                         <div className="text-[11px] text-slate-500">{tick.pair}</div>
                       </div>
