@@ -97,6 +97,7 @@ export function Header({ title }: { title?: string }) {
           )}
           style={{ color: 'var(--text-1)' }}
         >
+           <div className="live-dot" />
           <span style={{ color: 'var(--text-3)' }}>Virtual Bal.</span>
           <span className="font-semibold">
             ${binanceTick ? formatPrice(botState?.virtualBalance as number) : '--'}
