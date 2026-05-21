@@ -34,7 +34,6 @@ class ArbitrageService {
           if (sell.bid <= buy.ask || buy.ask <= 0) {
             continue
           }
-
           const grossSpread = (sell.bid - buy.ask) / buy.ask
           const buyFee = feeSchedule[buy.exchange]
           const sellFee = feeSchedule[sell.exchange]
@@ -43,7 +42,7 @@ class ArbitrageService {
           if (netSpread < config.minSpreadThreshold) {
             continue
           }
-
+          
           const estProfit = config.maxTradeSize * netSpread
           const confidence = clamp(0.55 + netSpread * 12, 0.5, 0.99)
 

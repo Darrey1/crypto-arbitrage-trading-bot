@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { requireAuth } from '../middleware/auth'
 import { validateQuery } from '../middleware/validate'
-import { asyncHandler } from '../lib/errors'
+import { ApiError, asyncHandler } from '../lib/errors'
 import { ok } from '../lib/response'
 import { tradeService } from '../services/tradeService'
 
@@ -36,14 +36,7 @@ router.get(
   })
 )
 
-router.get(
-  '/:id',
-  asyncHandler(async (req, res) => {
-    const trade = await tradeService.getTradeById(req.params.id)
-    res.json(ok('Trade fetched successfully', trade))
-  })
-)
-
+// /stats must be declared before /:id so Express does not swallow it as an ID
 router.get(
   '/stats',
   validateQuery(statsQuerySchema),
@@ -53,6 +46,17 @@ router.get(
       period: (req.query.period as '24h' | '7d' | '30d' | 'all') ?? '30d'
     })
     res.json(ok('Trade stats fetched successfully', stats))
+  })
+)
+
+router.get(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    const trade = await tradeService.getTradeById(req.params.id)
+    if (!trade) {
+      throw new ApiError(404, `Trade '${req.params.id}' not found`)
+    }
+    res.json(ok('Trade fetched successfully', trade))
   })
 )
 

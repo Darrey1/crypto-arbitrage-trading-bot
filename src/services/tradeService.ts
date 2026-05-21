@@ -1,7 +1,10 @@
-import { ExchangeName, TradeMode, TradeStatus } from '@prisma/client'
+import { TradeMode, TradeStatus } from '@prisma/client'
 import { prisma } from '../config/prisma'
-import { ApiListResult, ExecuteOpportunityInput, TradeView } from '../types/domain'
+import { ApiListResult, ExecuteOpportunityInput, LiveTradeInput, TradeView } from '../types/domain'
 import { getPagination } from '../lib/pagination'
+import { logService } from './logService'
+import { exchangeService, ExchangeKey } from './exchangeService'
+import { LogLevel } from '@prisma/client'
 
 class TradeService {
   async executeOpportunity(input: ExecuteOpportunityInput) {
@@ -75,6 +78,76 @@ class TradeService {
       limit,
       total
     }
+  }
+
+  async executeLiveTrade(input: LiveTradeInput) {
+    const { userId, opportunity, config, buyCred, sellCred } = input
+    const buyPrice = Math.max(0.000001, opportunity.buyPrice)
+    const sellPrice = Math.max(buyPrice, opportunity.sellPrice)
+    const amount = Math.max(0.0001, config.maxTradeSize / buyPrice)
+
+    const [buyResult, sellResult] = await Promise.allSettled([
+      exchangeService.placeOrder(
+        opportunity.buyExchange.toLowerCase() as ExchangeKey,
+        buyCred,
+        opportunity.pair,
+        'buy',
+        amount
+      ),
+      exchangeService.placeOrder(
+        opportunity.sellExchange.toLowerCase() as ExchangeKey,
+        sellCred,
+        opportunity.pair,
+        'sell',
+        amount
+      )
+    ])
+
+    const buyOrder = buyResult.status === 'fulfilled' ? buyResult.value : null
+    const sellOrder = sellResult.status === 'fulfilled' ? sellResult.value : null
+
+    const actualBuyPrice = buyOrder?.price || buyPrice
+    const actualSellPrice = sellOrder?.price || sellPrice
+    const actualAmount = buyOrder?.amount || amount
+    const fees = actualAmount * (actualBuyPrice + actualSellPrice) * 0.001
+    const netProfit = actualAmount * (actualSellPrice - actualBuyPrice) - fees
+    const status = buyOrder && sellOrder ? TradeStatus.COMPLETED : TradeStatus.FAILED
+
+    const trade = await prisma.trade.create({
+      data: {
+        userId,
+        pair: opportunity.pair,
+        buyExchange: opportunity.buyExchange,
+        sellExchange: opportunity.sellExchange,
+        buyPrice: actualBuyPrice,
+        sellPrice: actualSellPrice,
+        amount: actualAmount,
+        fees,
+        netProfit,
+        status,
+        mode: TradeMode.LIVE,
+        route: `${opportunity.buyExchange} → ${opportunity.sellExchange}`,
+        executedAt: new Date(),
+        settledAt: status === TradeStatus.COMPLETED ? new Date() : null
+      }
+    })
+
+    if (status === TradeStatus.FAILED) {
+      const errors = [
+        buyResult.status === 'rejected' ? `Buy (${opportunity.buyExchange}): ${(buyResult.reason as Error)?.message}` : null,
+        sellResult.status === 'rejected' ? `Sell (${opportunity.sellExchange}): ${(sellResult.reason as Error)?.message}` : null
+      ].filter(Boolean).join('; ')
+      await logService.createLog(userId, LogLevel.ERROR, 'Live trade failed', { errors, pair: opportunity.pair })
+    } else {
+      await logService.createLog(userId, LogLevel.INFO, 'Live trade executed', {
+        pair: opportunity.pair,
+        buyOrderId: buyOrder?.id,
+        sellOrderId: sellOrder?.id,
+        netProfit: '$' + netProfit.toFixed(4)
+      })
+    }
+
+    return trade
   }
 
   async getStats(params: { userId?: string; period?: '24h' | '7d' | '30d' | 'all' } = {}) {

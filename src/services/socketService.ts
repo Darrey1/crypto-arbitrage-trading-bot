@@ -3,27 +3,26 @@ import { Server as SocketServer, Socket } from 'socket.io'
 import { UserRole } from '@prisma/client'
 import { verifyAccessToken } from '../lib/jwt'
 import { JwtUser } from '../types/domain'
+import cors from 'cors'
 
 type SocketEventPayload = unknown
 
 class SocketService {
   private io: SocketServer | null = null
 
-  init(server: HttpServer) {
+  init(server: HttpServer, corsOptions: cors.CorsOptions) {
     if (this.io) {
       return this.io
     }
 
     this.io = new SocketServer(server, {
-      cors: {
-        origin: true,
-        credentials: true
-      }
+      cors: corsOptions
     })
 
     this.io.use((socket, next) => {
       const token = this.getToken(socket)
       if (!token) {
+        console.log("No token found")
         next()
         return
       }
@@ -36,7 +35,8 @@ class SocketService {
           role: payload.role as UserRole
         } satisfies JwtUser
         next()
-      } catch {
+      } catch (error) {
+        console.error('Error occurred while verifying access token:', error)
         next()
       }
     })

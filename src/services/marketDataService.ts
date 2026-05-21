@@ -83,13 +83,16 @@ class MarketDataService extends EventEmitter {
     return prices
   }
 
-  async getHistory(pair: string, exchange: ExchangeName, limit = 100) {
-    return prisma.priceSnapshot.findMany({
-      where: { pair, exchange },
-      orderBy: { timestamp: 'desc' },
-      take: limit
-    })
-  }
+  async getHistory(pair: string, exchange?: ExchangeName, limit = 100) {
+  return prisma.priceSnapshot.findMany({
+    where: {
+      pair,
+      ...(exchange && { exchange })
+    },
+    orderBy: { timestamp: 'desc' },
+    take: limit
+  })
+}
 }
 
 export const marketDataService = new MarketDataService()

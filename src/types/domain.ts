@@ -87,6 +87,7 @@ export interface BotStateView {
   totalTrades: number
   todayPnl: number
   winRate: number
+  virtualBalance: number
   lastStartedAt: Date | null
   lastStoppedAt: Date | null
 }
@@ -158,4 +159,30 @@ export interface ApiListResult<T> {
   page: number
   limit: number
   total: number
+}
+
+export interface ExchangeCredInput {
+  apiKey: string
+  encryptedSecret: string
+  iv: string
+  authTag: string
+  passphrase?: string
+}
+
+export interface LiveTradeInput {
+  userId: string
+  opportunity: {
+    pair: string
+    buyExchange: ExchangeName
+    sellExchange: ExchangeName
+    buyPrice: number
+    sellPrice: number
+    spread: number
+    netSpread: number
+    estProfit: number
+    confidence: number
+  }
+  config: BotRuntimeConfig
+  buyCred: ExchangeCredInput
+  sellCred: ExchangeCredInput
 }

@@ -16,7 +16,7 @@ const currentQuerySchema = z.object({
 
 const historyQuerySchema = z.object({
   pair: z.string().min(1),
-  exchange: z.nativeEnum(ExchangeName),
+  exchange: z.nativeEnum(ExchangeName).optional(),
   interval: z.string().optional(),
   limit: z.coerce.number().int().positive().max(500).optional()
 })
@@ -44,7 +44,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const history = await marketDataService.getHistory(
       req.query.pair as string,
-      req.query.exchange as ExchangeName,
+      req.query.exchange as ExchangeName | undefined,
       req.query.limit ? Number(req.query.limit) : 100
     )
     res.json(ok('Price history fetched successfully', history))

@@ -1,9 +1,10 @@
 import * as ccxt from 'ccxt'
 import { ExchangeName } from '@prisma/client'
-import { env, supportedExchanges } from '../config/env'
-import { MarketTicker } from '../types/domain'
+import { supportedExchanges } from '../config/env'
+import { decryptSecret } from '../lib/crypto'
+import { ExchangeCredInput, MarketTicker } from '../types/domain'
 
-type ExchangeKey = 'binance' | 'kucoin' | 'kraken'
+export type ExchangeKey = 'binance' | 'kucoin' | 'kraken'
 
 const exchangeFactories: Record<ExchangeKey, () => any> = {
   binance: () => new ccxt.binance({ enableRateLimit: true }),
@@ -87,6 +88,31 @@ class ExchangeService {
 
     const results = await Promise.all(requests)
     return results.filter((result): result is MarketTicker => Boolean(result))
+  }
+
+  async placeOrder(
+    exchangeName: ExchangeKey,
+    cred: ExchangeCredInput,
+    pair: string,
+    side: 'buy' | 'sell',
+    amount: number
+  ): Promise<{ id: string; price: number; amount: number } | null> {
+    try {
+      const secret = decryptSecret(cred.encryptedSecret, cred.iv, cred.authTag)
+      const client = exchangeFactories[exchangeName]()
+      client.apiKey = cred.apiKey
+      client.secret = secret
+      if (cred.passphrase) client.password = cred.passphrase
+
+      const order = await client.createMarketOrder(pair, side, amount)
+      return {
+        id: String(order.id),
+        price: Number(order.price ?? order.average ?? 0),
+        amount: Number(order.filled ?? order.amount ?? amount)
+      }
+    } catch {
+      return null
+    }
   }
 }
 

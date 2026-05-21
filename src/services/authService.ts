@@ -155,7 +155,12 @@ class AuthService {
   }
 
   async refresh(refreshToken: string) {
-    const payload = verifyRefreshToken(refreshToken)
+    let payload: ReturnType<typeof verifyRefreshToken>
+    try {
+      payload = verifyRefreshToken(refreshToken)
+    } catch {
+      throw new ApiError(401, 'Refresh token is invalid or expired')
+    }
     const tokenHash = hashToken(refreshToken)
 
     const record = await prisma.refreshToken.findUnique({ where: { tokenHash } })
