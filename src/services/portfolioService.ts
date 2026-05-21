@@ -23,7 +23,7 @@ class PortfolioService {
     if (existing) {
       return existing
     }
-
+    
     const balances = this.buildDefaultBalances()
     return prisma.portfolioSnapshot.create({
       data: {
