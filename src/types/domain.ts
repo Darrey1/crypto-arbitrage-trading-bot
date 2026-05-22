@@ -92,13 +92,28 @@ export interface BotStateView {
   lastStoppedAt: Date | null
 }
 
-export interface PortfolioBalance {
+export interface AssetBalance {
+  asset: string
+  free: number
+  price: number
+  usdValue: number
+}
+
+export interface ExchangePortfolio {
   exchange: ExchangeName
-  totalValue: number
-  usdt: number
-  eth: number
-  ethValue: number
   connected: boolean
+  error?: string
+  assets: AssetBalance[]
+  totalUsdValue: number
+}
+
+export interface PortfolioView {
+  mode: TradeMode
+  exchanges: ExchangePortfolio[]
+  totalUsdValue: number
+  walletAddress?: string
+  walletEthBalance?: number
+  walletUsdValue?: number
 }
 
 export interface PortfolioHistoryPoint {

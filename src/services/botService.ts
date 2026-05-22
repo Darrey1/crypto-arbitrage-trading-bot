@@ -355,7 +355,7 @@ class BotService {
       }
     })
 
-    await portfolioService.ensureInitialSnapshot(userId).catch(() => {})
+    await portfolioService.takeSnapshot(userId).catch(() => {})
     socketService.emitToUser(userId, 'trade:new', trade)
     socketService.emitToUser(userId, 'bot:status', await this.getStatus(userId))
   }
@@ -380,7 +380,9 @@ class BotService {
     const buyPrice = Math.max(0.000001, opportunity.buyPrice)
     const sellPrice = Math.max(buyPrice, opportunity.sellPrice)
     const amount = tradeSize / buyPrice
-    const fees = amount * (buyPrice * 0.001 + sellPrice * 0.001)
+    const buyFees = amount * buyPrice * 0.001
+    const sellFees = amount * sellPrice * 0.001
+    const fees = buyFees + sellFees
     const netProfit = amount * (sellPrice - buyPrice) - fees
 
     const trade = await prisma.trade.create({
@@ -406,6 +408,19 @@ class BotService {
       where: { userId },
       data: { virtualBalance: { increment: netProfit } }
     })
+
+    // Update the per-exchange paper portfolio ledger
+    await portfolioService.applyPaperTrade(
+      userId,
+      opportunity.buyExchange,
+      opportunity.sellExchange,
+      opportunity.pair,
+      amount,
+      buyPrice,
+      sellPrice,
+      buyFees,
+      sellFees
+    )
 
     await logService.createLog(userId, LogLevel.INFO, 'Paper trade executed', {
       pair: opportunity.pair,

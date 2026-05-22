@@ -90,6 +90,30 @@ class ExchangeService {
     return results.filter((result): result is MarketTicker => Boolean(result))
   }
 
+  async fetchExchangeBalance(
+    exchangeName: ExchangeKey,
+    cred: ExchangeCredInput
+  ): Promise<Record<string, number> | null> {
+    try {
+      const secret = decryptSecret(cred.encryptedSecret, cred.iv, cred.authTag)
+      const client = exchangeFactories[exchangeName]()
+      client.apiKey = cred.apiKey
+      client.secret = secret
+      if (cred.passphrase) client.password = cred.passphrase
+
+      const balance = await client.fetchBalance()
+      const result: Record<string, number> = {}
+      for (const [asset, amount] of Object.entries(balance.free ?? {})) {
+        if (typeof amount === 'number' && amount > 0) {
+          result[asset] = amount
+        }
+      }
+      return result
+    } catch {
+      return null
+    }
+  }
+
   async placeOrder(
     exchangeName: ExchangeKey,
     cred: ExchangeCredInput,
