@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react'
 import { io, Socket } from 'socket.io-client'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useBotStore } from '@/store/useBotStore'
-import type { BotLog, BotState, Opportunity, PortfolioBalance, PortfolioHistoryPoint, PriceData, Trade } from '@/api/types'
+import type { BotLog, BotState, Opportunity, PortfolioBalancesResponse, PortfolioExchangeBalance, PortfolioHistoryPoint, PriceData, Trade } from '@/api/types'
 
 export function usePriceEngine() {
   const token = useAuthStore((state) => state.accessToken)
@@ -46,7 +46,7 @@ export function usePriceEngine() {
     socket.on('trade:new', (payload: Trade) => applyRealtimeEvent({ type: 'trade:new', payload }))
     socket.on('bot:status', (payload: BotState) => applyRealtimeEvent({ type: 'bot:status', payload }))
     socket.on('bot:log', (payload: BotLog) => applyRealtimeEvent({ type: 'bot:log', payload }))
-    socket.on('portfolio:update', (payload: PortfolioBalance[] | PortfolioHistoryPoint[]) => {
+    socket.on('portfolio:update', (payload: PortfolioBalancesResponse | PortfolioExchangeBalance[] | PortfolioHistoryPoint[]) => {
       applyRealtimeEvent({ type: 'portfolio:update', payload })
     })
 

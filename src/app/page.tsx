@@ -362,7 +362,7 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-3 gap-6">
             {[
-              { n: '01', title: 'Connect API Keys',     desc: 'Add your exchange API keys securely. Read + Trade only — withdrawals never required.' },
+              { n: '01', title: 'Fund Your Account',     desc: 'Deposit funds into your trading account to start arbitraging.' },
               { n: '02', title: 'Configure Strategy',   desc: 'Set minimum spread, trade size, and risk limits. Choose Paper or Live mode.' },
               { n: '03', title: 'Bot Does the Work',    desc: 'The engine scans prices, detects spreads, and executes at machine speed.' },
             ].map(({ n, title, desc }) => (

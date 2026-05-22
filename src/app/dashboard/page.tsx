@@ -266,7 +266,7 @@ export default function DashboardPage() {
   )
 
   const recentTrades = trades.slice(0, 5)
-  const totalPortfolioValue = portfolioBalances.reduce((sum, b) => sum + b.totalValue, 0)
+  const totalPortfolioValue = portfolioBalances?.totalUsdValue ?? 0
   const portfolioHistoryData = portfolioHistory.slice(-14).map((point) => ({
     date: new Date(point.createdAt).toLocaleDateString('en', { month: 'short', day: 'numeric' }),
     value: point.totalValue,
@@ -479,7 +479,9 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-sm font-semibold text-slate-200">Portfolio Snapshot</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Across connected exchanges</p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {portfolioBalances?.mode ?? 'PAPER'} mode across connected exchanges
+                </p>
               </div>
               <Wallet className="w-4 h-4 text-[var(--accent)]" />
             </div>
@@ -487,7 +489,7 @@ export default function DashboardPage() {
               {formatCurrency(totalPortfolioValue)}
             </div>
             <div className="text-xs text-slate-500 mt-1">
-              {portfolioBalances.filter((b) => b.connected).length} exchanges connected
+              {portfolioBalances?.exchanges.filter((b) => b.connected).length ?? 0} exchanges connected
             </div>
           </div>
 

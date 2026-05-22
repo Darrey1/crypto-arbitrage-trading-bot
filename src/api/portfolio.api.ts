@@ -1,9 +1,9 @@
 import { apiClient } from './client'
-import type { ApiResponse, PortfolioBalance, PortfolioHistoryPoint } from './types'
+import type { ApiResponse, PortfolioBalancesResponse, PortfolioHistoryPoint, TradeMode } from './types'
 
 export const portfolioApi = {
-  getBalances: () =>
-    apiClient.get<ApiResponse<PortfolioBalance[]>>('/api/portfolio/balances'),
+  getBalances: (params?: { mode?: TradeMode }) =>
+    apiClient.get<ApiResponse<PortfolioBalancesResponse>>('/api/portfolio/balances', { params }),
 
   getHistory: (params?: { period?: '24h' | '7d' | '30d' | '90d' }) =>
     apiClient.get<ApiResponse<PortfolioHistoryPoint[]>>('/api/portfolio/history', { params }),

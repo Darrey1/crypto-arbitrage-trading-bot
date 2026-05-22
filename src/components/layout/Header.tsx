@@ -12,7 +12,7 @@ import { toast } from 'sonner'
 
 export function Header({ title }: { title?: string }) {
   const router = useRouter()
-  const { config, updateConfig, prices, socketConnected, opportunities, trades, botState } = useBotStore()
+  const { config, updateConfig, refreshPortfolioBalances, prices, socketConnected, opportunities, trades, botState } = useBotStore()
   const { theme, toggleTheme } = useThemeStore()
   const [loading, setLoading] = useState(false)
   const [currentMode, setCurrentMode] = useState<'PAPER' | 'LIVE' | null>(null)
@@ -31,6 +31,9 @@ export function Header({ title }: { title?: string }) {
     setLoading(true)
     setCurrentMode(mode)
     updateConfig({ executionMode: mode })
+      .then(() => {
+        return refreshPortfolioBalances(mode)
+      })
       .then(() => {
         toast.success(`Switched to ${mode === 'PAPER' ? 'Paper Trading' : 'Live Trading'} mode`)
       })

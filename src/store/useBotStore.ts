@@ -11,11 +11,13 @@ import type {
   BotLog,
   BotState,
   Opportunity,
-  PortfolioBalance,
+  PortfolioBalancesResponse,
+  PortfolioExchangeBalance,
   PortfolioHistoryPoint,
   PriceData,
   Trade,
   TradeStats,
+  TradeMode,
   WalletPublicView,
 } from '@/api/types'
 
@@ -26,7 +28,7 @@ export type RealtimeEventPayloads =
   | { type: 'trade:new'; payload: Trade }
   | { type: 'bot:status'; payload: BotState }
   | { type: 'bot:log'; payload: BotLog }
-  | { type: 'portfolio:update'; payload: PortfolioBalance[] | PortfolioHistoryPoint[] }
+  | { type: 'portfolio:update'; payload: PortfolioBalancesResponse | PortfolioExchangeBalance[] | PortfolioHistoryPoint[] }
 
 function priceKey(exchange: string, pair: string) {
   return `${exchange.toLowerCase()}:${pair}`
@@ -54,6 +56,25 @@ function mergeHistory(existing: PortfolioHistoryPoint[], incoming: PortfolioHist
   })
 }
 
+function sumPortfolioValue(exchanges: PortfolioExchangeBalance[]) {
+  return exchanges.reduce((sum, exchange) => sum + exchange.totalUsdValue, 0)
+}
+
+function normalizePortfolioSnapshot(
+  payload: PortfolioBalancesResponse | PortfolioExchangeBalance[],
+  mode: TradeMode,
+): PortfolioBalancesResponse {
+  if (Array.isArray(payload)) {
+    return {
+      mode,
+      exchanges: payload,
+      totalUsdValue: sumPortfolioValue(payload),
+    }
+  }
+
+  return payload
+}
+
 interface TradingStore {
   botState: BotState | null
   config: BotConfig | null
@@ -61,7 +82,7 @@ interface TradingStore {
   opportunities: Opportunity[]
   trades: Trade[]
   prices: Record<string, PriceData>
-  portfolioBalances: PortfolioBalance[]
+  portfolioBalances: PortfolioBalancesResponse | null
   portfolioHistory: PortfolioHistoryPoint[]
   tradeStats: TradeStats | null
   wallet: WalletPublicView | null
@@ -71,6 +92,7 @@ interface TradingStore {
   error: string | null
 
   refreshAll: (options?: { silent?: boolean }) => Promise<void>
+  refreshPortfolioBalances: (mode?: TradeMode) => Promise<void>
   refreshPrices: (options?: { silent?: boolean }) => Promise<void>
   refreshTrades: (params?: { page?: number; limit?: number; status?: string; pair?: string }) => Promise<void>
   startBot: () => Promise<void>
@@ -97,7 +119,7 @@ export const useBotStore = create<TradingStore>()((set) => ({
   opportunities: [],
   trades: [],
   prices: {},
-  portfolioBalances: [],
+  portfolioBalances: null,
   portfolioHistory: [],
   tradeStats: null,
   wallet: null,
@@ -112,7 +134,7 @@ export const useBotStore = create<TradingStore>()((set) => ({
       set({ loading: true, error: null })
     }
     try {
-      const [statusRes, configRes, opportunitiesRes, logsRes, tradesRes, pricesRes, balancesRes, historyRes, statsRes, walletRes] =
+      const [statusRes, configRes, opportunitiesRes, logsRes, tradesRes, pricesRes, historyRes, statsRes, walletRes] =
         await Promise.all([
           botApi.getStatus(),
           botApi.getConfig(),
@@ -120,11 +142,12 @@ export const useBotStore = create<TradingStore>()((set) => ({
           botApi.getLogs({ page: 1, limit: 50 }),
           tradesApi.getAll({ page: 1, limit: 50 }),
           pricesApi.getCurrent(),
-          portfolioApi.getBalances(),
           portfolioApi.getHistory({ period: '30d' }),
           tradesApi.getStats({ period: '30d' }),
           walletApi.me(),
         ])
+
+      const balancesRes = await portfolioApi.getBalances({ mode: configRes.data.data.executionMode })
 
       set({
         botState: statusRes.data.data,
@@ -148,6 +171,18 @@ export const useBotStore = create<TradingStore>()((set) => ({
       if (!silent) {
         set({ loading: false })
       }
+    }
+  },
+
+  refreshPortfolioBalances: async (mode) => {
+    try {
+      const nextMode = mode ?? get().config?.executionMode ?? get().portfolioBalances?.mode ?? 'PAPER'
+      const response = await portfolioApi.getBalances({ mode: nextMode })
+      set({ portfolioBalances: response.data.data, error: null })
+    } catch (error) {
+      const message = normalizeError(error)
+      set({ error: message })
+      throw new Error(message)
     }
   },
 
@@ -290,11 +325,17 @@ export const useBotStore = create<TradingStore>()((set) => ({
     if (Array.isArray(event.payload)) {
       if (event.type === 'portfolio:update') {
         if (event.payload.length > 0 && 'connected' in event.payload[0]) {
-          set({ portfolioBalances: event.payload as PortfolioBalance[] })
+          const mode = get().portfolioBalances?.mode ?? get().config?.executionMode ?? 'PAPER'
+          set({ portfolioBalances: normalizePortfolioSnapshot(event.payload as PortfolioExchangeBalance[], mode) })
         } else {
           set((state) => ({ portfolioHistory: mergeHistory(state.portfolioHistory, event.payload as PortfolioHistoryPoint[]) }))
         }
       }
+      return
+    }
+
+    if (event.type === 'portfolio:update' && 'exchanges' in event.payload) {
+      set({ portfolioBalances: normalizePortfolioSnapshot(event.payload, event.payload.mode) })
     }
   },
 

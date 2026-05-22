@@ -135,13 +135,24 @@ export type BotLog = {
   createdAt: string
 }
 
-export type PortfolioBalance = {
+export type PortfolioAssetBalance = {
+  asset: string
+  free: number
+  price: number
+  usdValue: number
+}
+
+export type PortfolioExchangeBalance = {
   exchange: ExchangeName
-  totalValue: number
-  usdt: number
-  eth: number
-  ethValue: number
   connected: boolean
+  assets: PortfolioAssetBalance[]
+  totalUsdValue: number
+}
+
+export type PortfolioBalancesResponse = {
+  mode: TradeMode
+  exchanges: PortfolioExchangeBalance[]
+  totalUsdValue: number
 }
 
 export type PortfolioHistoryPoint = {

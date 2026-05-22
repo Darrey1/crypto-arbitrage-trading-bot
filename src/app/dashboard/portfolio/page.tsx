@@ -10,15 +10,17 @@ import { EXCHANGES, formatCurrency, formatPercent } from '@/lib/utils'
 const PIE_COLORS = ['#ECBD74', '#10B981', '#06B6D4']
 
 export default function PortfolioPage() {
-  const { portfolioBalances, portfolioHistory, wallet, rotateWallet, loading } = useBotStore()
-  const totalValue = portfolioBalances.reduce((sum, balance) => sum + balance.totalValue, 0)
+  const { portfolioBalances, portfolioHistory, wallet, rotateWallet, refreshPortfolioBalances, loading } = useBotStore()
+  const totalValue = portfolioBalances?.totalUsdValue ?? 0
   const previousValue = portfolioHistory[portfolioHistory.length - 2]?.totalValue ?? totalValue
 
-  const pieData = useMemo(() => portfolioBalances.map((balance, index) => ({
+  const exchangeBalances = portfolioBalances?.exchanges ?? []
+
+  const pieData = useMemo(() => exchangeBalances.map((balance, index) => ({
     name: EXCHANGES[balance.exchange.toLowerCase() as keyof typeof EXCHANGES].name,
-    value: balance.totalValue,
+    value: balance.totalUsdValue,
     color: PIE_COLORS[index % PIE_COLORS.length],
-  })), [portfolioBalances])
+  })), [exchangeBalances])
 
   const historyData = portfolioHistory.map((point) => ({
     day: new Date(point.createdAt).toLocaleDateString('en', { month: 'short', day: 'numeric' }),
@@ -31,6 +33,15 @@ export default function PortfolioPage() {
       toast.success('Wallet rotated')
     } catch {
       toast.error('Wallet rotation failed')
+    }
+  }
+
+  async function handleRefreshBalances() {
+    try {
+      await refreshPortfolioBalances(portfolioBalances?.mode)
+      toast.success('Portfolio refreshed')
+    } catch {
+      toast.error('Portfolio refresh failed')
     }
   }
 
@@ -49,9 +60,12 @@ export default function PortfolioPage() {
               </span>
               <span className="text-xs text-slate-500">latest snapshot</span>
             </div>
+            <p className="mt-2 text-xs uppercase tracking-[0.2em] text-slate-500">
+              {portfolioBalances?.mode ?? 'PAPER'} mode
+            </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <button onClick={() => toast.success('Portfolio refreshed')} className="btn-ghost px-3 py-2 rounded-lg text-xs flex items-center gap-1.5">
+            <button onClick={handleRefreshBalances} className="btn-ghost px-3 py-2 rounded-lg text-xs flex items-center gap-1.5">
               <RefreshCw className="w-3.5 h-3.5" />
               Refresh
             </button>
@@ -65,13 +79,13 @@ export default function PortfolioPage() {
 
       <div className="grid xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2 space-y-4">
-          {portfolioBalances.length === 0 ? (
+          {exchangeBalances.length === 0 ? (
             <div className="glass rounded-2xl p-8 text-center text-xs text-slate-500">
               {loading ? 'Loading balances…' : 'No balances available yet.'}
             </div>
-          ) : portfolioBalances.map((balance) => {
+          ) : exchangeBalances.map((balance) => {
             const exchangeInfo = EXCHANGES[balance.exchange.toLowerCase() as keyof typeof EXCHANGES]
-            const allocation = totalValue > 0 ? (balance.totalValue / totalValue) * 100 : 0
+            const allocation = totalValue > 0 ? (balance.totalUsdValue / totalValue) * 100 : 0
             return (
               <div key={balance.exchange} className="glass rounded-2xl p-5">
                 <div className="flex items-start justify-between mb-4">
@@ -85,7 +99,7 @@ export default function PortfolioPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-mono font-bold text-slate-100">{formatCurrency(balance.totalValue)}</div>
+                    <div className="text-lg font-mono font-bold text-slate-100">{formatCurrency(balance.totalUsdValue)}</div>
                     <div className="text-xs text-slate-500">{allocation.toFixed(1)}% of total</div>
                   </div>
                 </div>
@@ -94,19 +108,19 @@ export default function PortfolioPage() {
                   <div className="h-full rounded-full transition-all duration-500" style={{ width: `${allocation}%`, background: exchangeInfo.color }} />
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="glass-subtle rounded-xl p-3 text-center">
-                    <div className="text-xs text-slate-500 mb-1">USDT</div>
-                    <div className="text-sm font-mono font-semibold text-slate-200">${balance.usdt.toFixed(2)}</div>
-                  </div>
-                  <div className="glass-subtle rounded-xl p-3 text-center">
-                    <div className="text-xs text-slate-500 mb-1">ETH</div>
-                    <div className="text-sm font-mono font-semibold text-slate-200">{balance.eth.toFixed(4)}</div>
-                  </div>
-                  <div className="glass-subtle rounded-xl p-3 text-center">
-                    <div className="text-xs text-slate-500 mb-1">ETH Value</div>
-                    <div className="text-sm font-mono font-semibold text-[var(--accent)]">{formatCurrency(balance.ethValue)}</div>
-                  </div>
+                <div className="space-y-2">
+                  {balance.assets.map((asset) => (
+                    <div key={asset.asset} className="glass-subtle rounded-xl p-3 flex items-center justify-between gap-3 text-xs">
+                      <div>
+                        <div className="font-semibold text-slate-200">{asset.asset}</div>
+                        <div className="text-[10px] text-slate-500">Free {asset.free.toLocaleString()} · Price {formatCurrency(asset.price, 4)}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-mono font-semibold text-slate-100">{formatCurrency(asset.usdValue)}</div>
+                        <div className="text-[10px] text-slate-500">USD value</div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )
