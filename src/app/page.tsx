@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowRight, CheckCircle2, TrendingUp, Shield, BarChart3, Globe, Bell, Cpu, Activity } from 'lucide-react'
 import { formatPrice, formatPercent } from '@/lib/utils'
 import dynamic from 'next/dynamic'
@@ -187,11 +188,13 @@ export default function LandingPage() {
             className="rounded-2xl overflow-hidden shadow-xl"
             style={{ border: '1px solid var(--border)', background: '#060709' }}
           >
-            <img
+            <Image
               src="/cryptotradinghomepage.jpeg"
               alt="Crypto trading dashboard"
+              width={1280}
+              height={701}
               className="block w-full h-auto object-cover md:h-[520px] md:object-contain"
-              loading="eager"
+              priority
             />
          
 
