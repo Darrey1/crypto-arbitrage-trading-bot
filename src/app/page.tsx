@@ -195,8 +195,6 @@ export default function LandingPage() {
               className="block w-full h-auto object-cover md:h-[520px] md:object-contain"
               priority
             />
-         
-
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 text-left">
             {/* Live prices */}
             <div
