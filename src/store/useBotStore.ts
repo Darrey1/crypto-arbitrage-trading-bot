@@ -112,7 +112,7 @@ function normalizeError(error: unknown) {
   return 'Unable to load trading data.'
 }
 
-export const useBotStore = create<TradingStore>()((set) => ({
+export const useBotStore = create<TradingStore>()((set, get) => ({
   botState: null,
   config: null,
   logs: [],
