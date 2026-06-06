@@ -7,7 +7,13 @@ import { ExchangeCredInput, MarketTicker } from '../types/domain'
 export type ExchangeKey = 'binance' | 'kucoin' | 'kraken'
 
 const exchangeFactories: Record<ExchangeKey, () => any> = {
-  binance: () => new ccxt.binance({ enableRateLimit: true }),
+  binance: () => new ccxt.binance({
+  enableRateLimit: true,
+  options: {
+    defaultType: 'spot',
+    adjustForTimeDifference: true,
+  }
+}),
   kucoin: () => new ccxt.kucoin({ enableRateLimit: true }),
   kraken: () => new ccxt.kraken({ enableRateLimit: true })
 }
