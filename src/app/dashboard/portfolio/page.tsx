@@ -11,6 +11,7 @@ const PIE_COLORS = ['#ECBD74', '#10B981', '#06B6D4']
 
 export default function PortfolioPage() {
   const { portfolioBalances, portfolioHistory, wallet, rotateWallet, loading } = useBotStore()
+  console.log('Portfolio balances:', portfolioBalances)
   const totalValue = portfolioBalances.reduce((sum, balance) => sum + balance.totalValue, 0)
   const previousValue = portfolioHistory[portfolioHistory.length - 2]?.totalValue ?? totalValue
 
