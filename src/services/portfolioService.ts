@@ -7,7 +7,7 @@ import { env, supportedExchanges } from '../config/env'
 const defaultPaperBalance = 10000
 
 const exchangeWeights: Record<ExchangeName, number> = {
-  BINANCE: 0.563,
+  OKX: 0.563,
   KRAKEN: 0.258,
   KUCOIN: 0.179
 }

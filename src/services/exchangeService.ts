@@ -4,25 +4,18 @@ import { supportedExchanges } from '../config/env'
 import { decryptSecret } from '../lib/crypto'
 import { ExchangeCredInput, MarketTicker } from '../types/domain'
 
-export type ExchangeKey = 'binance' | 'kucoin' | 'kraken'
+export type ExchangeKey = 'okx' | 'kucoin' | 'kraken'
 
 const exchangeFactories: Record<ExchangeKey, () => any> = {
-  binance: () => new ccxt.binance({
-    enableRateLimit: true,
-    httpsProxy: process.env.HTTPS_PROXY,
-    options: {
-      defaultType: 'spot',
-      adjustForTimeDifference: true,
-    }
-  }),
+  okx: () => new ccxt.okx({enableRateLimit: true}),
   kucoin: () => new ccxt.kucoin({ enableRateLimit: true }),
   kraken: () => new ccxt.kraken({ enableRateLimit: true })
 }
 
 const toExchangeName = (exchange: string): ExchangeName => {
   switch (exchange) {
-    case 'binance':
-      return ExchangeName.BINANCE
+    case 'okx':
+      return ExchangeName.OKX
     case 'kucoin':
       return ExchangeName.KUCOIN
     default:

@@ -2,7 +2,7 @@ import { ExchangeName } from '@prisma/client'
 import { MarketTicker, OpportunityView, BotRuntimeConfig } from '../types/domain'
 
 const feeSchedule: Record<ExchangeName, number> = {
-  BINANCE: 0.001,
+  OKX: 0.001,
   KRAKEN: 0.0026,
   KUCOIN: 0.001
 }
