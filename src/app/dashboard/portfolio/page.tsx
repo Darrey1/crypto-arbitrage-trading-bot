@@ -8,9 +8,14 @@ import { useBotStore } from '@/store/useBotStore'
 import { EXCHANGES, formatCurrency, formatPercent } from '@/lib/utils'
 import type { ExchangeInfo } from '@/types'
 
+const EXCHANGE_ALIASES: Record<string, keyof typeof EXCHANGES> = {
+  binance: 'okx',
+}
+
 function getExchangeInfo(exchange: string): ExchangeInfo {
-  const key = exchange.toLowerCase() as keyof typeof EXCHANGES
-  return EXCHANGES[key] ?? { id: key, name: exchange, logo: '', color: '#64748B', fee: 0 }
+  const lower = exchange.toLowerCase()
+  const key = (EXCHANGE_ALIASES[lower] ?? lower) as keyof typeof EXCHANGES
+  return EXCHANGES[key] ?? { id: lower, name: exchange, logo: '', color: '#64748B', fee: 0 }
 }
 
 const PIE_COLORS = ['#ECBD74', '#10B981', '#06B6D4']
