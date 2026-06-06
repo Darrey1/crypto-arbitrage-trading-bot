@@ -10,6 +10,7 @@ const allowedOriginPatterns = [
   /^http:\/\/localhost:\d+$/,
   /^http:\/\/127\.0\.0\.1:\d+$/,
   /^https:\/\/[a-z0-9-]+\.ngrok-free\.dev$/,
+  /^https:\/\/arbmatrix\.up\.railway\.app$/,
 ]
 
 const corsOptions = {
