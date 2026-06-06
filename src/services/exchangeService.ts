@@ -79,11 +79,6 @@ class ExchangeService {
         timestamp: new Date()
       }
     } catch (error) {
-      console.error(`[${exchange.toUpperCase()}] Failed to fetch ticker for ${pair}:`, {
-        message: (error as any)?.message,
-        type: (error as any)?.constructor?.name,
-        url: (error as any)?.url,
-      })
   return null
 }
   }
