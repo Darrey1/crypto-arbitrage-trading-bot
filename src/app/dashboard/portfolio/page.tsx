@@ -6,6 +6,12 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, 
 import { toast } from 'sonner'
 import { useBotStore } from '@/store/useBotStore'
 import { EXCHANGES, formatCurrency, formatPercent } from '@/lib/utils'
+import type { ExchangeInfo } from '@/types'
+
+function getExchangeInfo(exchange: string): ExchangeInfo {
+  const key = exchange.toLowerCase() as keyof typeof EXCHANGES
+  return EXCHANGES[key] ?? { id: key, name: exchange, logo: '', color: '#64748B', fee: 0 }
+}
 
 const PIE_COLORS = ['#ECBD74', '#10B981', '#06B6D4']
 
@@ -16,7 +22,7 @@ export default function PortfolioPage() {
   const previousValue = portfolioHistory[portfolioHistory.length - 2]?.totalValue ?? totalValue
 
   const pieData = useMemo(() => portfolioBalances.map((balance, index) => ({
-    name: EXCHANGES[balance.exchange.toLowerCase() as keyof typeof EXCHANGES].name,
+    name: getExchangeInfo(balance.exchange).name,
     value: balance.totalValue,
     color: PIE_COLORS[index % PIE_COLORS.length],
   })), [portfolioBalances])
@@ -71,7 +77,7 @@ export default function PortfolioPage() {
               {loading ? 'Loading balances…' : 'No balances available yet.'}
             </div>
           ) : portfolioBalances.map((balance) => {
-            const exchangeInfo = EXCHANGES[balance.exchange.toLowerCase() as keyof typeof EXCHANGES]
+            const exchangeInfo = getExchangeInfo(balance.exchange)
             const allocation = totalValue > 0 ? (balance.totalValue / totalValue) * 100 : 0
             return (
               <div key={balance.exchange} className="glass rounded-2xl p-5">
