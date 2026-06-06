@@ -185,7 +185,7 @@ export function PriceComparisonChart({ pair }: { pair: string }) {
             {socketConnected ? 'Live stream' : 'Reconnecting'}
           </div>
           <h3 className="mt-2 text-sm font-semibold text-slate-100">{pair} Price Comparison</h3>
-          <p className="mt-1 text-xs text-slate-500">History + live ticks · Binance, Kraken & KuCoin</p>
+          <p className="mt-1 text-xs text-slate-500">History + live ticks · OKX, Kraken & KuCoin</p>
         </div>
 
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">

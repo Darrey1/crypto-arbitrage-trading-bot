@@ -12,7 +12,7 @@ const MOCK_BOTS = Array.from({ length: 14 }, (_, i) => ({
   status: i % 5 === 3 ? 'paused' : i % 7 === 0 ? 'error' : 'running',
   mode: i % 3 === 0 ? 'live' : 'paper',
   symbol: i % 2 === 0 ? 'ETH/USDT' : 'BTC/USDT',
-  exchanges: 'Binance→Kraken',
+  exchanges: 'OKX→Kraken',
   tradesToday: Math.floor(Math.random() * 25),
   profitToday: (Math.random() - 0.1) * 120,
   uptime: `${Math.floor(Math.random() * 24)}h ${Math.floor(Math.random() * 60)}m`,

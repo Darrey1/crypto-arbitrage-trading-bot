@@ -8,7 +8,7 @@ import { toast } from 'sonner'
 export default function AdminConfigPage() {
   const [maintenance, setMaintenance] = useState(false)
   const [config, setConfig] = useState({
-    binanceFee: 0.001, krakenFee: 0.002, kucoinFee: 0.001,
+    okxFee: 0.001, krakenFee: 0.002, kucoinFee: 0.001,
     minTradeSize: 10, maxTradeSize: 10000,
     maxDailyTradesGlobal: 500, rateLimit: 60,
     enabledPairs: ['ETH/USDT', 'BTC/USDT', 'ETH/BTC'],
@@ -60,7 +60,7 @@ export default function AdminConfigPage() {
           <h3 className="text-sm font-semibold text-slate-200 mb-4">Exchange Fee Configuration</h3>
           <div className="space-y-3">
             {[
-              { key: 'binanceFee', label: 'Binance Maker/Taker Fee', color: '#F0B90B' },
+              { key: 'okxFee', label: 'OKX Maker/Taker Fee', color: '#F0B90B' },
               { key: 'krakenFee',  label: 'Kraken Maker/Taker Fee',  color: '#5741D9' },
               { key: 'kucoinFee',  label: 'KuCoin Maker/Taker Fee',  color: '#24AE8F' },
             ].map(({ key, label, color }) => (

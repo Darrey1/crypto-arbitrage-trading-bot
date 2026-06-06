@@ -11,16 +11,16 @@ const ScatterBackground = dynamic(
 )
 
 const MOCK_PRICES = [
-  { exchange: 'Binance', price: 3245.82, change: +0.34 },
+  { exchange: 'OKX', price: 3245.82, change: +0.34 },
   { exchange: 'Kraken',  price: 3247.10, change: +0.38 },
   { exchange: 'KuCoin',  price: 3244.65, change: +0.31 },
 ]
 
 const MOCK_OPPORTUNITIES = [
-  { pair: 'ETH/USDT', from: 'Binance', to: 'Kraken',  spread: '0.47%', profit: '$4.70' },
-  { pair: 'ETH/USDT', from: 'KuCoin',  to: 'Kraken',  spread: '0.38%', profit: '$3.80' },
-  { pair: 'BTC/USDT', from: 'Binance', to: 'KuCoin',  spread: '0.29%', profit: '$8.70' },
-  { pair: 'ETH/BTC',  from: 'Kraken',  to: 'Binance', spread: '0.52%', profit: '$5.20' },
+  { pair: 'ETH/USDT', from: 'OKX',    to: 'Kraken',  spread: '0.47%', profit: '$4.70' },
+  { pair: 'ETH/USDT', from: 'KuCoin', to: 'Kraken',  spread: '0.38%', profit: '$3.80' },
+  { pair: 'BTC/USDT', from: 'OKX',    to: 'KuCoin',  spread: '0.29%', profit: '$8.70' },
+  { pair: 'ETH/BTC',  from: 'Kraken', to: 'OKX',     spread: '0.52%', profit: '$5.20' },
 ]
 
 const FEATURES = [
@@ -28,7 +28,7 @@ const FEATURES = [
   { icon: Cpu,        title: 'Auto Execution',       desc: 'Trades fire the moment a spread exceeds your threshold. Zero manual intervention.' },
   { icon: Shield,     title: 'Risk Controls',        desc: 'Daily loss limits, slippage protection, and emergency stop protect your capital.' },
   { icon: BarChart3,  title: 'Deep Analytics',       desc: 'P&L curves, win rate, hourly heatmaps, and route performance in one dashboard.' },
-  { icon: Globe,      title: '3 CEX Exchanges',      desc: 'Binance, Kraken, and KuCoin — highest liquidity, lowest latency, best APIs.' },
+  { icon: Globe,      title: '3 CEX Exchanges',      desc: 'OKX, Kraken, and KuCoin — highest liquidity, lowest latency, best APIs.' },
   { icon: Bell,       title: 'Smart Alerts',         desc: 'Push notifications for opportunities, executed trades, and daily P&L summaries.' },
 ]
 
@@ -41,12 +41,12 @@ const STATS = [
 
 function TickerBar() {
   const items = [
-    'Binance  ETH/USDT  $3,245.82  +0.34%',
+    'OKX      ETH/USDT  $3,245.82  +0.34%',
     'Kraken   ETH/USDT  $3,247.10  +0.38%',
     'KuCoin   ETH/USDT  $3,244.65  +0.31%',
-    'Binance  BTC/USDT  $67,234.10  +0.82%',
+    'OKX      BTC/USDT  $67,234.10  +0.82%',
     'Kraken   BTC/USDT  $67,240.50  +0.84%',
-    'Spread Alert  ETH/USDT  0.47%  Binance→Kraken',
+    'Spread Alert  ETH/USDT  0.47%  OKX→Kraken',
     'KuCoin   ETH/BTC  0.04823  -0.11%',
   ]
 
@@ -136,7 +136,7 @@ export default function LandingPage() {
             className="text-xs font-semibold tracking-[0.2em] uppercase mb-6"
             style={{ color: 'var(--text-2)' }}
           >
-            Ethereum · Binance · Kraken · KuCoin
+            Ethereum · OKX · Kraken · KuCoin
           </p>
 
           {/* Heading */}
@@ -261,7 +261,7 @@ export default function LandingPage() {
                 <div className="flex items-center justify-between text-xs">
                   <div className="text-center">
                     <div className="mb-1" style={{ color: 'var(--text-3)' }}>Buy on</div>
-                    <div className="font-semibold text-amber-400">Binance</div>
+                    <div className="font-semibold text-amber-400">OKX</div>
                     <div className="font-mono mt-0.5" style={{ color: 'var(--text-2)' }}>$3,245.82</div>
                   </div>
                   <ArrowRight className="w-4 h-4" style={{ color: 'var(--accent)' }} />
@@ -477,7 +477,7 @@ export default function LandingPage() {
 
           <div className="grid md:grid-cols-3 gap-5">
             {[
-              { name: 'Binance',  letter: 'B', color: '#F0B90B', desc: "World's largest CEX. Deepest ETH/USDT liquidity, lowest fees at 0.1%.", fee: '0.10%' },
+              { name: 'OKX',      letter: 'O', color: '#F0B90B', desc: "One of the world's largest CEX. Deep ETH/USDT liquidity, competitive 0.1% taker fee.", fee: '0.10%' },
               { name: 'Kraken',   letter: 'K', color: '#9945FF', desc: 'Most trusted exchange. No geo-restrictions, comprehensive REST + WebSocket API.', fee: '0.20%' },
               { name: 'KuCoin',   letter: 'K', color: '#23AF91', desc: 'Easiest API onboarding. No KYC for basic access, 0.1% fee with KCS discount.', fee: '0.10%' },
             ].map(({ name, letter, color, desc, fee }) => (
@@ -666,13 +666,13 @@ export default function LandingPage() {
                 <span className="font-bold" style={{ color: 'var(--text-1)' }}>ArbMatrix</span>
               </Link>
               <p className="text-sm leading-relaxed max-w-xs" style={{ color: 'var(--text-3)' }}>
-                Automated CEX arbitrage for ETH across Binance, Kraken, and KuCoin.
+                Automated CEX arbitrage for ETH across OKX, Kraken, and KuCoin.
               </p>
             </div>
             <div className="flex-1 grid grid-cols-3 gap-8">
               {[
                 { title: 'Product',   links: ['Dashboard', 'Bot Engine', 'Analytics', 'Settings'] },
-                { title: 'Exchanges', links: ['Binance', 'Kraken', 'KuCoin'] },
+                { title: 'Exchanges', links: ['OKX', 'Kraken', 'KuCoin'] },
                 { title: 'Legal',     links: ['Terms', 'Privacy', 'Risk Disclosure'] },
               ].map(({ title, links }) => (
                 <div key={title}>

@@ -18,7 +18,7 @@ function genLogs(count = 80): SystemLog[] {
     INFO:  ['Price tick received ETH/USDT', 'Trade executed successfully', 'User session started', 'Bot started for user#142', 'WebSocket connected', 'Config saved'],
     WARN:  ['High latency on Kraken API: 420ms', 'Rate limit approaching: 80%', 'Slippage exceeded threshold 0.15%', 'Retrying failed request'],
     ERROR: ['Kraken connection timeout', 'Order placement failed: insufficient balance', 'Redis connection lost — reconnecting', 'JWT verification failed'],
-    DEBUG: ['Scanning ETH/USDT spreads…', 'Cache hit for price#binance', 'Worker heartbeat OK', 'Queue depth: 3 jobs'],
+    DEBUG: ['Scanning ETH/USDT spreads…', 'Cache hit for price#okx', 'Worker heartbeat OK', 'Queue depth: 3 jobs'],
   }
   return Array.from({ length: count }, (_, i) => {
     const level = levels[Math.floor(Math.random() * levels.length)]

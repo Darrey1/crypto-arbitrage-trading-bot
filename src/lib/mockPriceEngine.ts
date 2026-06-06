@@ -5,14 +5,14 @@ import { generateId, EXCHANGES, calculateNetSpread, estimateProfit } from './uti
 const BASE_ETH_PRICE = 3245.50
 
 interface PriceState {
-  binance: number
+  okx: number
   kraken: number
   kucoin: number
   trend: number
 }
 
 const priceState: PriceState = {
-  binance: BASE_ETH_PRICE,
+  okx: BASE_ETH_PRICE,
   kraken: BASE_ETH_PRICE * 1.0008,
   kucoin: BASE_ETH_PRICE * 0.9994,
   trend: 0,
@@ -28,13 +28,13 @@ export function tickPrices(symbol = 'ETH/USDT'): PriceTick[] {
   priceState.trend += (Math.random() - 0.5) * 0.001
   priceState.trend = Math.max(-0.005, Math.min(0.005, priceState.trend))
 
-  priceState.binance = nextPrice(priceState.binance + priceState.binance * priceState.trend * 0.3)
+  priceState.okx = nextPrice(priceState.okx + priceState.okx * priceState.trend * 0.3)
   priceState.kraken  = nextPrice(priceState.kraken  + priceState.kraken  * priceState.trend * 0.28)
   priceState.kucoin  = nextPrice(priceState.kucoin  + priceState.kucoin  * priceState.trend * 0.32)
 
   const spread = 0.0002
 
-  const exchanges: ExchangeId[] = ['binance', 'kraken', 'kucoin']
+  const exchanges: ExchangeId[] = ['okx', 'kraken', 'kucoin']
   return exchanges.map(ex => {
     const mid = priceState[ex]
     return {
@@ -43,7 +43,7 @@ export function tickPrices(symbol = 'ETH/USDT'): PriceTick[] {
       bid: mid * (1 - spread),
       ask: mid * (1 + spread),
       last: mid,
-      volume24h: ex === 'binance' ? 180000 + Math.random() * 5000
+      volume24h: ex === 'okx' ? 180000 + Math.random() * 5000
                 : ex === 'kraken' ? 42000  + Math.random() * 2000
                 : 65000 + Math.random() * 3000,
       change24h: (Math.random() - 0.48) * 4,
@@ -58,7 +58,7 @@ export function detectOpportunity(
   tradeSize: number,
   symbol = 'ETH/USDT',
 ): ArbitrageOpportunity | null {
-  const exchanges: ExchangeId[] = ['binance', 'kraken', 'kucoin']
+  const exchanges: ExchangeId[] = ['okx', 'kraken', 'kucoin']
   let best: ArbitrageOpportunity | null = null
 
   for (const buyEx of exchanges) {

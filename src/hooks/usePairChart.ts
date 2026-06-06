@@ -6,10 +6,10 @@ import type { PriceData } from '@/api/types'
 import { useBotStore } from '@/store/useBotStore'
 import { useAuthStore } from '@/store/useAuthStore'
 
-export const EXCHANGE_ORDER = ['BINANCE', 'KRAKEN', 'KUCOIN'] as const
+export const EXCHANGE_ORDER = ['OKX', 'KRAKEN', 'KUCOIN'] as const
 
 export const EXCHANGE_COLORS = {
-  BINANCE: '#ECBD74',
+  OKX: '#ECBD74',
   KRAKEN: '#7C3AED',
   KUCOIN: '#10B981',
 } as const
@@ -195,7 +195,7 @@ export function usePairChart(pair: string): PairChartState {
   // Live header-card prices (with last chart point as fallback)
   const livePrices = useMemo<Partial<Record<ExchangeKey, number | null>>>(() => {
     const values: Partial<Record<ExchangeKey, number | null>> = {
-      BINANCE: null,
+      OKX: null,
       KRAKEN: null,
       KUCOIN: null,
     }

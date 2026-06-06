@@ -7,7 +7,7 @@ import { cn, EXCHANGES, formatPercent, formatPrice, calculateNetSpread } from '@
 import type { PriceData } from '@/api/types'
 import { PriceComparisonChart } from '@/components/dashboard/PriceComparisonChart'
 
-const EXCHANGE_IDS = ['binance', 'kraken', 'kucoin'] as const
+const EXCHANGE_IDS = ['okx', 'kraken', 'kucoin'] as const
 
 type SortKey = 'spread' | 'volume' | 'change'
 
@@ -151,7 +151,7 @@ export default function MarketsPage() {
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-[rgba(255,255,255,0.05)]">
-                  {['Pair', 'Binance', 'Kraken', 'KuCoin', 'Best Spread', 'Route', '24h Vol', 'Net Move'].map((heading) => (
+                  {['Pair', 'OKX', 'Kraken', 'KuCoin', 'Best Spread', 'Route', '24h Vol', 'Net Move'].map((heading) => (
                     <th key={heading} className="px-4 py-3 text-left text-slate-500 font-medium whitespace-nowrap">{heading}</th>
                   ))}
                 </tr>

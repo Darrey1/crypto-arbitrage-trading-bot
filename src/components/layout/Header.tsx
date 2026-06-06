@@ -23,7 +23,7 @@ export function Header({ title }: { title?: string }) {
   const executionMode = config?.executionMode ?? 'PAPER'
   const BASE_CURRENCY = selectedPair.split('/')[0]
   const QUOTE_CURRENCY = selectedPair.split('/')[1]
-  const binanceTick = prices[`binance:${selectedPair}`]
+  const okxTick = prices[`okx:${selectedPair}`]
 
   function handleModeSwitch(mode: 'PAPER' | 'LIVE') {
     if (!config) return
@@ -100,7 +100,7 @@ export function Header({ title }: { title?: string }) {
            <div className="live-dot" />
           <span style={{ color: 'var(--text-3)' }}>Virtual Bal.</span>
           <span className="font-semibold">
-            ${binanceTick ? formatPrice(botState?.virtualBalance as number) : '--'}
+            ${okxTick ? formatPrice(botState?.virtualBalance as number) : '--'}
           </span>
         </div>
         )}
@@ -115,7 +115,7 @@ export function Header({ title }: { title?: string }) {
           <div className="live-dot" />
           <span style={{ color: 'var(--text-3)' }}>{BASE_CURRENCY}{QUOTE_CURRENCY}</span>
           <span className="font-semibold">
-            ${binanceTick ? formatPrice(binanceTick.lastPrice) : '--'}
+            ${okxTick ? formatPrice(okxTick.lastPrice) : '--'}
           </span>
         </div>
 

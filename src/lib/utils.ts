@@ -7,10 +7,10 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const EXCHANGES: Record<ExchangeId, ExchangeInfo> = {
-  binance: {
-    id: 'binance',
-    name: 'Binance',
-    logo: '/exchanges/binance.svg',
+  okx: {
+    id: 'okx',
+    name: 'OKX',
+    logo: '/exchanges/okx.svg',
     color: '#F0B90B',
     fee: 0.001,
   },
@@ -111,7 +111,7 @@ export function generateSparkline(base: number, points = 20, volatility = 0.02):
 // Mock price generator for paper trading
 export function getMockPrice(base: number, exchange: ExchangeId): number {
   const offsets: Record<ExchangeId, number> = {
-    binance: 0,
+    okx: 0,
     kraken: (Math.random() - 0.5) * 0.003 * base,
     kucoin: (Math.random() - 0.5) * 0.004 * base,
   }

@@ -26,7 +26,7 @@ const PLATFORM_STATS = [
 const RECENT_ACTIVITY = [
   { type: 'register', msg: 'New user registered: trader@gmail.com', time: '2m ago', icon: Users, color: 'text-violet-400' },
   { type: 'bot_start', msg: 'Bot started: user#142 — ETH/USDT paper mode', time: '5m ago', icon: Bot, color: 'text-emerald-400' },
-  { type: 'trade', msg: 'Trade executed: ETH/USDT Binance→Kraken +$4.82', time: '7m ago', icon: TrendingUp, color: 'text-cyan-400' },
+  { type: 'trade', msg: 'Trade executed: ETH/USDT OKX→Kraken +$4.82', time: '7m ago', icon: TrendingUp, color: 'text-cyan-400' },
   { type: 'error', msg: 'API error: user#89 Kraken connection timeout', time: '12m ago', icon: AlertTriangle, color: 'text-red-400' },
   { type: 'bot_stop', msg: 'Bot stopped: user#201 — daily limit reached', time: '18m ago', icon: Bot, color: 'text-amber-400' },
   { type: 'register', msg: 'New user registered: arb_pro@mail.com', time: '25m ago', icon: Users, color: 'text-violet-400' },

@@ -17,7 +17,7 @@ export type ApiListResponse<T> = {
 
 export type UserRole = 'USER' | 'ADMIN'
 export type UserStatus = 'ACTIVE' | 'DISABLED'
-export type ExchangeName = 'BINANCE' | 'KRAKEN' | 'KUCOIN'
+export type ExchangeName = 'OKX' | 'KRAKEN' | 'KUCOIN'
 export type TradeMode = 'PAPER' | 'LIVE'
 export type BotStatus = 'IDLE' | 'RUNNING' | 'PAUSED' | 'STOPPED' | 'ERROR'
 export type TradeStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED'

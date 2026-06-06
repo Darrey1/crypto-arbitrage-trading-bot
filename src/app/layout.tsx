@@ -5,7 +5,7 @@ import { AuthProvider } from '@/components/AuthProvider'
 
 export const metadata: Metadata = {
   title: 'ArbMatrix — Crypto Arbitrage Trading Bot',
-  description: 'Automated CEX arbitrage bot for Ethereum trading across Binance, Kraken, and KuCoin.',
+  description: 'Automated CEX arbitrage bot for Ethereum trading across OKX, Kraken, and KuCoin.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -5,7 +5,7 @@ import { cn, formatCurrency } from '@/lib/utils'
 import { Search, Download, ArrowRight, Flag } from 'lucide-react'
 import { toast } from 'sonner'
 
-const EXCHANGES = ['binance', 'kraken', 'kucoin'] as const
+const EXCHANGES = ['okx', 'kraken', 'kucoin'] as const
 const PAIRS = ['ETH/USDT', 'BTC/USDT', 'ETH/BTC']
 const STATUSES = ['completed', 'failed', 'partial'] as const
 

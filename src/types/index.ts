@@ -1,6 +1,6 @@
 // ─── Exchange & Price Types ───────────────────────────────────────────────────
 
-export type ExchangeId = 'binance' | 'kraken' | 'kucoin'
+export type ExchangeId = 'okx' | 'kraken' | 'kucoin'
 
 export interface ExchangeInfo {
   id: ExchangeId
@@ -146,7 +146,7 @@ export interface DailyPnL {
 
 export interface PairPerformance {
   pair: string
-  route: string  // e.g. "binance→kraken"
+  route: string  // e.g. "okx→kraken"
   trades: number
   profit: number
   avgSpread: number
