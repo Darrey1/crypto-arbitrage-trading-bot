@@ -2,7 +2,7 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 import { authReady, useAuthStore } from '@/store/useAuthStore'
 import type { AuthTokens } from './types'
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
+const BASE_URL = "https://arbmatrix.up.railway.app"
 
 type RetryConfig = InternalAxiosRequestConfig & { _retry?: boolean }
 
