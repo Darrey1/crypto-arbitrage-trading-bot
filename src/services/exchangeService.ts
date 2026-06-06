@@ -72,6 +72,7 @@ class ExchangeService {
         timestamp: new Date()
       }
     } catch (error) {
+      console.error(`Failed to fetch ticker for ${exchange} ${pair}:`, error)
   return null
 }
   }
