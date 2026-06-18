@@ -194,10 +194,10 @@ export default function LandingPage() {
               className="block w-full h-auto object-cover md:h-[520px] md:object-contain"
               loading="eager"
             /> */}
-
+          
             <Image
                 src="/cryptotradinghomepage.jpeg"
-                alt="Crypto trading dashboard"
+                alt="Crypto trading dashboard image"
                 width={1200}
                 height={520}
                 className="block w-full h-auto object-cover md:h-[520px] md:object-contain"
