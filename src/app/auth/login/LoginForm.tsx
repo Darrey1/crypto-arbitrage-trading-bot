@@ -36,7 +36,7 @@ export function LoginForm({ nextPath }: LoginFormProps) {
       const response = await authApi.login(form)
       setSession(response.data.data)
       toast.success('Signed in successfully')
-      router.replace(nextPath ?? '/dashboard')
+      window.location.href = nextPath ?? '/dashboard'
     } catch (requestError) {
       const message = requestError && typeof requestError === 'object' && 'response' in requestError
         ? ((requestError as { response?: { data?: { message?: string } } }).response?.data?.message ?? 'Unable to sign in.')
