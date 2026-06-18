@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ArrowRight, CheckCircle2, TrendingUp, Shield, BarChart3, Globe, Bell, Cpu, Activity } from 'lucide-react'
 import { formatPrice, formatPercent } from '@/lib/utils'
 import dynamic from 'next/dynamic'
+import Image from 'next/image'
 
 const ScatterBackground = dynamic(
   () => import('@/components/ScatterBackground').then((m) => m.ScatterBackground),
@@ -187,12 +188,21 @@ export default function LandingPage() {
             className="rounded-2xl overflow-hidden shadow-xl"
             style={{ border: '1px solid var(--border)', background: '#060709' }}
           >
-            <img
+            {/* <img
               src="/cryptotradinghomepage.jpeg"
               alt="Crypto trading dashboard"
               className="block w-full h-auto object-cover md:h-[520px] md:object-contain"
               loading="eager"
-            />
+            /> */}
+
+            <Image
+                src="/cryptotradinghomepage.jpeg"
+                alt="Crypto trading dashboard"
+                width={1200}
+                height={520}
+                className="block w-full h-auto object-cover md:h-[520px] md:object-contain"
+                priority
+              />
          
 
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 text-left">
