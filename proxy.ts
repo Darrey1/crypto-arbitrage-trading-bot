@@ -3,7 +3,13 @@ import { NextRequest, NextResponse } from 'next/server'
 const PUBLIC_PATHS = ['/', '/auth/login', '/auth/register']
 
 function isPublicPath(pathname: string) {
-  return PUBLIC_PATHS.includes(pathname) || pathname.startsWith('/_next') || pathname.startsWith('/api') || pathname === '/favicon.ico'
+  return (
+    PUBLIC_PATHS.includes(pathname) ||
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname === '/favicon.ico' ||
+    /\.(png|jpg|jpeg|gif|svg|webp|ico)$/.test(pathname)
+  )
 }
 
 export function proxy(request: NextRequest) {
@@ -24,7 +30,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.gif|.*\\.svg|.*\\.webp).*)'],
 }
-
-// testing
